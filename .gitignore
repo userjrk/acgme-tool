@@ -1,0 +1,23 @@
+# Case data — contains patient encounter info, never push to GitHub
+data/
+*.json
+!docs/FORM_SPEC.json
+
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Playwright
+test-results/
+playwright-report/
