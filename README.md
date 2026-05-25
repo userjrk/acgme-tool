@@ -1,5 +1,15 @@
 # ACGME Case Log Tool
 
+## Live App
+
+Open on any device: https://userjrk.github.io/acgme-tool/app/case_log.html
+
+iPhone: open in Safari → Share → Add to Home Screen
+
+Android: open in Chrome → Add to Home Screen
+
+---
+
 Fast case entry + batch submission for the ACGME ADS portal.
 
 ## Web App
