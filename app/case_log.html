@@ -667,7 +667,516 @@
 <div id="toast"></div>
 
 <script>
-/* JS added in subsequent tasks */
+// ── Supervisor map (name → id) ──
+const SUPERVISORS = {
+  'Adkins, Jakob':'743216','Angert, Kevin':'738774','Ariani, Kayvan':'650569',
+  'Axelrod, Mac':'743489','Bissessar, Ravi':'650551','Bryskin, Robert':'650444',
+  'Capone, Nicholas':'755003','Chacon, Joshua':'743217','Cole, Britten':'741070',
+  'Davidovich, Isaac':'650553','Doyle, Charles':'746882','Eberhardt, Kara':'650473',
+  'Fan, John':'736431','Freiberg, Stephen':'650545','Gallo, Elimio':'755005',
+  'Geubelle, Gregory':'741066','Gonzalez Ciccarelli, Luis':'743219','Grodin, Benjamin':'751637',
+  'Gutierrez, Marc':'748654','Hadaway, Jonathan':'744373','Hansen, Bradley':'726834',
+  'Hong, Andrew':'746884','Hulsey, Alina':'742742','Idigo, Nnaemeka':'741069',
+  'Kaiser, Eric':'753976','Kamdar, Jay':'746885','Kumar, Vikas':'752636',
+  'Mansfield, Frederick':'650548','Maziad, Jennifer':'741068','Merrell, Matthew':'748656',
+  'Michaels, Robert':'650461','Moorjani, Arun':'742437','Newbern, Matthew':'745309',
+  'Norris, Frederick':'745303',"O'Hara, Brian":'741071','Olin, Douglas':'726836',
+  'Parisian, David':'752635','Phillips, Justin':'748655','Radmall, Brandon':'744372',
+  'Rasmussen, Aaron':'742362','Rosemeier, Frank':'741065','Schroeder, Gregory':'748657',
+  'Sefton, William':'745306','Silvestrini-Suarez, Marco':'746883','Solby, Bryan':'752634',
+  'Spalding, Howard':'651090','Stewart, Douglas':'650558','Stine, Todd':'738764',
+  'Stoner, Matthew':'746886','Strickland, Jeffrey':'744374','Tao, David':'742743',
+  'Tongson, Sebastian':'755008','Warner, Norman':'743218','Weinstein, Adam':'650546',
+  'Weltman, Nathan':'650554','Wieland, Tommy':'726840','Wilkhu, Harshdeep':'752645'
+};
+
+// ── Readable labels for case tags and submit.js ──
+const LABELS = {
+  '51592':'AdventHealth','55630':'Pain Mgmt',
+  '33':'12-65yr','34':'≥65yr',
+  '156628':'ASA1','156632':'ASA2','156634':'ASA3','156636':'ASA4','156630':'ASA5','156631':'ASA6',
+  '156629':'1E','156633':'2E','156635':'3E','156637':'4E','156626':'5E',
+  '46':'Non-Trauma LTP','134':'Trauma LTP',
+  '1256330':'Gen Maint','156641':'MAC','1256331':'Spinal','1256332':'Epidural','156646':'CSE',
+  '156648':'SS-PNB','156647':'Cont-PNB',
+  '156654':'Oral ETT','1256333':'SGA','1256334':'DL','1256335':'VL','156655':'Nasal ETT',
+  '2298046':'Flex Bronch','2298047':'Awake','156650':'Mask','156666':'Jet Vent','1256337':'Other Airway',
+  '156674':'Bronch Blocker','1256336':'DLT','148':'Anticipated DA','149':'Unanticipated DA',
+  '156682':'Cardiac w/o CPB','156681':'Cardiac+CPB',
+  '156685':'Endovasc','156684':'Open Vessel',
+  '156688':'IC Endovasc','156689':'IC Nonvasc Open','156687':'IC Vasc Open',
+  '156692':'C-Section','156686':'C-Section HR','156690':'Vag Delivery','156691':'Vag Delivery HR',
+  '156683':'Intrathoracic',
+  '1256338':'A-Line','1256339':'CVL','156693':'US-Guided','156700':'PA Cath',
+  '1256341':'CSF Drain','156708':'IONM','156707':'TEE',
+  '156722':'Lumbar','156720':'T1-7','156721':'T8-12','156719':'Cervical','156723':'Caudal',
+  '1911477':'Adductor Canal','156730':'Ankle','156734':'Axillary','1911478':'ESP',
+  '156735':'Femoral','156732':'Infraclavicular','156731':'Interscalene',
+  '156737':'Lumbar Plexus','156739':'Paravertebral','156729':'Popliteal',
+  '1911476':'QL Block','156738':'Retrobulbar','156740':'Saphenous','156736':'Sciatic',
+  '156733':'Supraclavicular','1911475':'TAP','1256340':'Other PNB'
+};
+function lbl(val) { return LABELS[val] || val; }
+
+// ── Storage layer ──
+const DB_NAME  = 'acgme_cases_db';
+const DB_STORE = 'cases';
+const LS_KEY   = 'acgme_cases';
+let db = null;
+
+function openDB() {
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = e => e.target.result.createObjectStore(DB_STORE, { keyPath: 'id' });
+      req.onsuccess = e => { db = e.target.result; resolve(db); };
+      req.onerror   = () => resolve(null);
+    } catch(_) { resolve(null); }
+  });
+}
+
+function lsLoad() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(_) { return []; }
+}
+
+function lsSave(cases) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(cases)); } catch(_) {}
+}
+
+function idbGetAll() {
+  if (!db) return Promise.resolve([]);
+  return new Promise(resolve => {
+    const tx  = db.transaction(DB_STORE, 'readonly');
+    const req = tx.objectStore(DB_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror   = () => resolve([]);
+  });
+}
+
+function idbPut(c) {
+  if (!db) return Promise.resolve();
+  return new Promise(resolve => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).put(c);
+    tx.oncomplete = resolve;
+    tx.onerror    = resolve;
+  });
+}
+
+function idbDelete(id) {
+  if (!db) return Promise.resolve();
+  return new Promise(resolve => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror    = resolve;
+  });
+}
+
+async function storeCase(c) {
+  await idbPut(c);
+  const all = await idbGetAll();
+  lsSave(all.length ? all : lsLoad().concat([c]));
+}
+
+async function deleteCase(id) {
+  await idbDelete(id);
+  const all = await idbGetAll();
+  lsSave(all);
+  const ls = lsLoad().filter(c => c.id !== id);
+  lsSave(all.length ? all : ls);
+}
+
+async function loadAllCases() {
+  const idb = await idbGetAll();
+  const ls  = lsLoad();
+  if (idb.length >= ls.length) {
+    if (idb.length > 0) lsSave(idb);
+    return idb;
+  }
+  // LS has more — merge and restore to IDB
+  const merged = Object.values(
+    [...idb, ...ls].reduce((m, c) => { m[c.id] = c; return m; }, {})
+  );
+  for (const c of merged) await idbPut(c);
+  lsSave(merged);
+  console.log(`[storage] reconciled: IDB ${idb.length}, LS ${ls.length} → merged ${merged.length}`);
+  return merged;
+}
+
+// ── Toast ──
+function showToast(msg, duration = 2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Chip handler ──
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const group    = chip.dataset.group;
+    const isSingle = chip.dataset.single === 'true';
+    if (isSingle) {
+      document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => c.classList.remove('selected'));
+    }
+    chip.classList.toggle('selected');
+    handleAutoSelect(chip);
+  });
+});
+
+// ── Yes/No toggle handler ──
+document.querySelectorAll('[data-yn]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const yn  = btn.dataset.yn;
+    const val = btn.dataset.val;
+    document.querySelectorAll(`[data-yn="${yn}"]`).forEach(b => b.classList.remove('active-yes', 'active-no'));
+    btn.classList.add(val === 'yes' ? 'active-yes' : 'active-no');
+    const body = document.getElementById(`body-${yn}`);
+    if (body) body.classList.toggle('hidden', val !== 'yes');
+  });
+});
+
+// ── Expander handler ──
+document.querySelectorAll('.expander-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = document.getElementById(btn.dataset.target);
+    if (!target) return;
+    const isHidden = target.classList.toggle('hidden');
+    btn.textContent = isHidden
+      ? btn.textContent.replace('−', '+')
+      : btn.textContent.replace('+', '−');
+  });
+});
+
+// ── Auto-selection rules ──
+function handleAutoSelect(chip) {
+  if (!chip.classList.contains('selected')) return;
+  const val = chip.dataset.val;
+
+  if (val === '1256336') {
+    // DLT → expand Procedure > Other, auto-select Intrathoracic Non-Cardiac
+    setYN('proc-other', true);
+    autoSelect('156683');
+  }
+  if (val === '156689' || val === '156687') {
+    // Intracranial (Nonvasc Open or Vascular Open) → expand Specialized Monitoring, auto-select IONM
+    setYN('mon', true);
+    autoSelect('156708');
+  }
+}
+
+function setYN(yn, toYes) {
+  const yesBtn = document.querySelector(`[data-yn="${yn}"][data-val="yes"]`);
+  const noBtn  = document.querySelector(`[data-yn="${yn}"][data-val="no"]`);
+  if (!yesBtn || !noBtn) return;
+  yesBtn.classList.toggle('active-yes',  toYes);
+  yesBtn.classList.remove(toYes ? 'active-no' : 'active-yes');
+  noBtn.classList.toggle('active-no',   !toYes);
+  noBtn.classList.remove(!toYes ? 'active-yes' : 'active-no');
+  const body = document.getElementById(`body-${yn}`);
+  if (body) body.classList.toggle('hidden', !toYes);
+}
+
+function autoSelect(val) {
+  const chip = document.querySelector(`.chip[data-val="${val}"]`);
+  if (!chip) return;
+  chip.classList.add('selected', 'auto-selected');
+}
+
+// ── Sticky supervisor ──
+function loadStickySuper() {
+  try {
+    const stored = localStorage.getItem('acgme_last_supervisor');
+    if (!stored) return;
+    const { id, name } = JSON.parse(stored);
+    const input = document.getElementById('supervisor-input');
+    input.value = name;
+    input.dataset.supervisorId = id;
+    document.getElementById('supervisor-sticky').style.display = 'inline-flex';
+  } catch(_) {}
+}
+
+function saveStickySuper(name, id) {
+  try { localStorage.setItem('acgme_last_supervisor', JSON.stringify({ id, name })); } catch(_) {}
+}
+
+document.getElementById('supervisor-input').addEventListener('change', function() {
+  const name = this.value.trim();
+  const id   = SUPERVISORS[name];
+  if (id) {
+    this.dataset.supervisorId = id;
+    saveStickySuper(name, id);
+    document.getElementById('supervisor-sticky').style.display = 'inline-flex';
+  } else {
+    this.dataset.supervisorId = '';
+    document.getElementById('supervisor-sticky').style.display = 'none';
+  }
+});
+
+// ── Pre-selections on load ──
+function applyDefaults() {
+  document.getElementById('case-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('site-select').value = '51592';
+  document.getElementById('year-select').value = '1';
+  const gm = document.querySelector('.chip[data-val="1256330"]');
+  if (gm) gm.classList.add('selected');
+}
+
+// ── Clear form ──
+function clearForm() {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected', 'auto-selected'));
+  document.querySelectorAll('[data-yn]').forEach(btn => {
+    btn.classList.remove('active-yes', 'active-no');
+    if (btn.dataset.val === 'no') btn.classList.add('active-no');
+  });
+  document.querySelectorAll('[id^="body-"]').forEach(b => b.classList.add('hidden'));
+  document.getElementById('case-id').value = '';
+  applyDefaults();
+  loadStickySuper();
+}
+
+// ── Build case object from form state ──
+function buildCase() {
+  const dateVal = document.getElementById('case-date').value;
+  if (!dateVal) { showToast('Date is required'); return null; }
+
+  const superInput = document.getElementById('supervisor-input');
+  const superName  = superInput.value.trim();
+  const superId    = superInput.dataset.supervisorId || SUPERVISORS[superName] || '';
+  if (!superId) { showToast('Select a supervisor from the list'); return null; }
+
+  const ageChip = document.querySelector('.chip[data-group="age"].selected');
+  if (!ageChip) { showToast('Patient age is required'); return null; }
+
+  function getChips(group) {
+    return [...document.querySelectorAll(`.chip[data-group="${group}"].selected`)].map(c => c.dataset.val);
+  }
+
+  function getSingle(group) {
+    const c = document.querySelector(`.chip[data-group="${group}"].selected`);
+    return c ? c.dataset.val : null;
+  }
+
+  return {
+    id:              Date.now(),
+    case_date:       dateVal,
+    case_id:         document.getElementById('case-id').value.trim(),
+    case_year:       document.getElementById('year-select').value,
+    site:            document.getElementById('site-select').value,
+    supervisor:      superId,
+    supervisor_name: superName,
+    patient_age:     ageChip.dataset.val,
+    life_threat:     getSingle('life_threat'),
+    difficult_airway:getSingle('difficult_airway'),
+    asa:             getChips('asa'),
+    anesthesia:      getChips('anesthesia'),
+    airway:          getChips('airway'),
+    proc:            getChips('proc'),
+    vasc:            getChips('vasc'),
+    mon:             getChips('mon'),
+    neuraxial:       getChips('neuraxial'),
+    pnb_site:        getChips('pnb_site'),
+    lung_iso:        getChips('lung_iso')
+  };
+}
+
+// ── Save Case ──
+async function saveCase() {
+  const c = buildCase();
+  if (!c) return;
+  await storeCase(c);
+  await updateBadge();
+  showToast('Case saved');
+  clearForm();
+}
+
+// ── Backup badge ──
+async function updateBadge() {
+  const cases     = await loadAllCases();
+  const lastCount = parseInt(localStorage.getItem('acgme_last_export_count') || '0', 10);
+  const unsaved   = Math.max(0, cases.length - lastCount);
+  const el        = document.getElementById('badge');
+  document.getElementById('badge-count').textContent = cases.length;
+  el.className = '';
+  if (unsaved >= 10) el.className = 'alert';
+  else if (unsaved >= 5) el.className = 'warn';
+}
+
+// ── Panel open/close ──
+function openPanel() {
+  renderCasesList();
+  document.getElementById('cases-panel').classList.remove('hidden');
+}
+
+function closePanel() {
+  document.getElementById('cases-panel').classList.add('hidden');
+}
+
+// ── Render saved cases ──
+async function renderCasesList() {
+  const cases = await loadAllCases();
+  const list  = document.getElementById('cases-list');
+  if (cases.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:24px">No saved cases</p>';
+    return;
+  }
+  const sorted = [...cases].sort((a, b) => b.id - a.id);
+  list.innerHTML = sorted.map(c => {
+    const allVals = [
+      c.patient_age,
+      ...(c.asa||[]),
+      ...(c.anesthesia||[]),
+      ...(c.airway||[]),
+      ...(c.lung_iso||[]),
+      ...(c.life_threat ? [c.life_threat] : []),
+      ...(c.difficult_airway ? [c.difficult_airway] : []),
+      ...(c.proc||[]),
+      ...(c.vasc||[]),
+      ...(c.mon||[]),
+      ...(c.neuraxial||[]),
+      ...(c.pnb_site||[])
+    ].filter(Boolean);
+    const tags = allVals.map(v => `<span class="case-tag">${lbl(v)}</span>`).join('');
+    return `
+      <div class="case-card">
+        <div class="case-card-header">
+          <span class="case-date-label">${c.case_date}${c.case_id ? ' · ' + c.case_id : ''}</span>
+          <button class="case-delete" onclick="confirmDeleteCase(${c.id})" aria-label="Delete case">×</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim)">${c.supervisor_name || '—'}</div>
+        <div class="case-tags">${tags}</div>
+      </div>`;
+  }).join('');
+}
+
+async function confirmDeleteCase(id) {
+  if (!confirm('Delete this case?')) return;
+  await deleteCase(id);
+  await updateBadge();
+  renderCasesList();
+}
+
+async function deleteAllCases() {
+  const cases = await loadAllCases();
+  if (cases.length === 0) { showToast('No cases to delete'); return; }
+  if (!confirm(`Delete all ${cases.length} cases? This cannot be undone.`)) return;
+  if (!confirm('Are you sure? All cases will be permanently deleted.')) return;
+  for (const c of cases) await idbDelete(c.id);
+  lsSave([]);
+  await updateBadge();
+  renderCasesList();
+}
+
+// ── Export JSON ──
+async function exportJSON() {
+  const cases = await loadAllCases();
+  const json  = JSON.stringify(cases, null, 2);
+  const fname = `acgme_cases_${new Date().toISOString().split('T')[0]}.json`;
+  await deliverFile(json, fname, 'application/json');
+  localStorage.setItem('acgme_last_export_count', String(cases.length));
+  await updateBadge();
+  showToast(`Exported ${cases.length} cases`);
+}
+
+// ── Export CSV ──
+async function exportCSV() {
+  const cases   = await loadAllCases();
+  const headers = ['date','case_id','site','supervisor','patient_age','asa','anesthesia','airway','lung_iso','proc','vasc','mon','neuraxial','pnb_site'];
+  const rows    = cases.map(c => [
+    c.case_date, c.case_id||'', c.site, c.supervisor_name,
+    c.patient_age,
+    (c.asa||[]).join('|'),
+    (c.anesthesia||[]).join('|'),
+    (c.airway||[]).join('|'),
+    (c.lung_iso||[]).join('|'),
+    (c.proc||[]).join('|'),
+    (c.vasc||[]).join('|'),
+    (c.mon||[]).join('|'),
+    (c.neuraxial||[]).join('|'),
+    (c.pnb_site||[]).join('|')
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv   = [headers.join(','), ...rows].join('\n');
+  const fname = `acgme_cases_${new Date().toISOString().split('T')[0]}.csv`;
+  await deliverFile(csv, fname, 'text/csv');
+  localStorage.setItem('acgme_last_export_count', String(cases.length));
+  await updateBadge();
+  showToast(`Exported ${cases.length} cases as CSV`);
+}
+
+// ── Platform-aware file delivery ──
+async function deliverFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const ext  = filename.split('.').pop();
+  // Web Share API (mobile)
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], filename, { type: mimeType });
+    if (navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: filename }); return; }
+      catch(e) { if (e.name !== 'AbortError') console.warn('Share failed:', e); }
+    }
+  }
+  // File System Access API (desktop Chrome/Edge)
+  if (window.showSaveFilePicker) {
+    try {
+      const fh       = await window.showSaveFilePicker({ suggestedName: filename, types: [{ description: 'Export', accept: { [mimeType]: ['.' + ext] } }] });
+      const writable = await fh.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch(e) { if (e.name !== 'AbortError') console.warn('File picker failed:', e); }
+  }
+  // Standard download fallback
+  const url = URL.createObjectURL(blob);
+  const a   = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// ── Import JSON ──
+function importJSON() {
+  document.getElementById('import-input').click();
+}
+
+async function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  try {
+    const text     = await file.text();
+    const imported = JSON.parse(text);
+    if (!Array.isArray(imported)) { showToast('Invalid JSON format'); return; }
+    const existing  = await loadAllCases();
+    const existIds  = new Set(existing.map(c => c.id));
+    const newCases  = imported.filter(c => c.id && !existIds.has(c.id));
+    for (const c of newCases) await storeCase(c);
+    await updateBadge();
+    renderCasesList();
+    showToast(`Imported ${newCases.length} new case(s)`);
+  } catch(e) {
+    showToast('Import failed: invalid JSON');
+  }
+}
+
+// ── Service worker registration ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service_worker.js')
+      .then(r => console.log('[SW] registered, scope:', r.scope))
+      .catch(e => console.warn('[SW] registration failed:', e));
+  });
+}
+
+// ── Init ──
+openDB().then(async () => {
+  await loadAllCases();
+  await updateBadge();
+  renderCasesList();
+});
+applyDefaults();
+loadStickySuper();
 </script>
 </body>
 </html>
