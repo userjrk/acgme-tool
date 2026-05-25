@@ -319,8 +319,8 @@
       <div class="card-header"><span class="card-label">Patient Age</span></div>
       <div class="card-body">
         <div class="chips" id="chips-age">
-          <button class="chip" data-group="age" data-val="33">12 – 65 yr</button>
-          <button class="chip" data-group="age" data-val="34">≥ 65 yr</button>
+          <button class="chip" data-group="age" data-single="true" data-val="33">12 – 65 yr</button>
+          <button class="chip" data-group="age" data-single="true" data-val="34">≥ 65 yr</button>
         </div>
       </div>
     </div>
@@ -782,9 +782,8 @@ async function storeCase(c) {
 async function deleteCase(id) {
   await idbDelete(id);
   const all = await idbGetAll();
-  lsSave(all);
-  const ls = lsLoad().filter(c => c.id !== id);
-  lsSave(all.length ? all : ls);
+  if (all.length || db) { lsSave(all); }
+  else { lsSave(lsLoad().filter(c => c.id !== id)); }
 }
 
 async function loadAllCases() {
@@ -805,11 +804,13 @@ async function loadAllCases() {
 }
 
 // ── Toast ──
+let _toastTimer = null;
 function showToast(msg, duration = 2200) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), duration);
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // ── Chip handler ──
@@ -1082,14 +1083,16 @@ async function exportJSON() {
 // ── Export CSV ──
 async function exportCSV() {
   const cases   = await loadAllCases();
-  const headers = ['date','case_id','site','supervisor','patient_age','asa','anesthesia','airway','lung_iso','proc','vasc','mon','neuraxial','pnb_site'];
+  const headers = ['date','case_id','case_year','site','supervisor','patient_age','asa','anesthesia','airway','lung_iso','life_threat','difficult_airway','proc','vasc','mon','neuraxial','pnb_site'];
   const rows    = cases.map(c => [
-    c.case_date, c.case_id||'', c.site, c.supervisor_name,
+    c.case_date, c.case_id||'', c.case_year||'', c.site, c.supervisor_name,
     c.patient_age,
     (c.asa||[]).join('|'),
     (c.anesthesia||[]).join('|'),
     (c.airway||[]).join('|'),
     (c.lung_iso||[]).join('|'),
+    c.life_threat||'',
+    c.difficult_airway||'',
     (c.proc||[]).join('|'),
     (c.vasc||[]).join('|'),
     (c.mon||[]).join('|'),
