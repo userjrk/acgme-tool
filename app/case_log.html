@@ -330,21 +330,21 @@
       <div class="card-header"><span class="card-label">ASA Physical Status</span></div>
       <div class="card-body">
         <div class="chips" id="chips-asa">
-          <button class="chip" data-group="asa" data-val="156628">ASA 1</button>
-          <button class="chip" data-group="asa" data-val="156632">ASA 2</button>
-          <button class="chip" data-group="asa" data-val="156634">ASA 3</button>
-          <button class="chip" data-group="asa" data-val="156636">ASA 4</button>
-          <button class="chip" data-group="asa" data-val="156630">ASA 5</button>
+          <button class="chip" data-group="asa" data-single="true" data-val="156628">ASA 1</button>
+          <button class="chip" data-group="asa" data-single="true" data-val="156632">ASA 2</button>
+          <button class="chip" data-group="asa" data-single="true" data-val="156634">ASA 3</button>
+          <button class="chip" data-group="asa" data-single="true" data-val="156636">ASA 4</button>
+          <button class="chip" data-group="asa" data-single="true" data-val="156630">ASA 5</button>
         </div>
         <button class="expander-btn" data-target="asa-extra">+ Other ASA</button>
         <div id="asa-extra" class="expander-content hidden">
           <div class="chips">
-            <button class="chip" data-group="asa" data-val="156631">ASA 6</button>
-            <button class="chip" data-group="asa" data-val="156629">1E</button>
-            <button class="chip" data-group="asa" data-val="156633">2E</button>
-            <button class="chip" data-group="asa" data-val="156635">3E</button>
-            <button class="chip" data-group="asa" data-val="156637">4E</button>
-            <button class="chip" data-group="asa" data-val="156626">5E</button>
+            <button class="chip" data-group="asa" data-single="true" data-val="156631">ASA 6</button>
+            <button class="chip" data-group="asa" data-single="true" data-val="156629">1E</button>
+            <button class="chip" data-group="asa" data-single="true" data-val="156633">2E</button>
+            <button class="chip" data-group="asa" data-single="true" data-val="156635">3E</button>
+            <button class="chip" data-group="asa" data-single="true" data-val="156637">4E</button>
+            <button class="chip" data-group="asa" data-single="true" data-val="156626">5E</button>
           </div>
         </div>
       </div>
@@ -871,10 +871,10 @@ function setYN(yn, toYes) {
   const yesBtn = document.querySelector(`[data-yn="${yn}"][data-val="yes"]`);
   const noBtn  = document.querySelector(`[data-yn="${yn}"][data-val="no"]`);
   if (!yesBtn || !noBtn) return;
-  yesBtn.classList.toggle('active-yes',  toYes);
-  yesBtn.classList.remove(toYes ? 'active-no' : 'active-yes');
-  noBtn.classList.toggle('active-no',   !toYes);
-  noBtn.classList.remove(!toYes ? 'active-yes' : 'active-no');
+  yesBtn.classList.toggle('active-yes', toYes);
+  yesBtn.classList.toggle('active-no',  false);
+  noBtn.classList.toggle('active-no',  !toYes);
+  noBtn.classList.toggle('active-yes',  false);
   const body = document.getElementById(`body-${yn}`);
   if (body) body.classList.toggle('hidden', !toYes);
 }
@@ -984,12 +984,18 @@ function buildCase() {
 
 // ── Save Case ──
 async function saveCase() {
-  const c = buildCase();
-  if (!c) return;
-  await storeCase(c);
-  await updateBadge();
-  showToast('Case saved');
-  clearForm();
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  try {
+    const c = buildCase();
+    if (!c) return;
+    await storeCase(c);
+    await updateBadge();
+    showToast('Case saved');
+    clearForm();
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── Backup badge ──
@@ -1055,7 +1061,7 @@ async function confirmDeleteCase(id) {
   if (!confirm('Delete this case?')) return;
   await deleteCase(id);
   await updateBadge();
-  renderCasesList();
+  await renderCasesList();
 }
 
 async function deleteAllCases() {

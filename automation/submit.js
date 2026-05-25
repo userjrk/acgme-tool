@@ -145,6 +145,10 @@ async function submitForm(page) {
   const submitBtn = page.locator('input[type="submit"], button[type="submit"]').first();
   await submitBtn.click();
   await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+  const currentUrl = page.url().toLowerCase();
+  if (currentUrl.includes('login') || currentUrl.includes('signin')) {
+    throw new Error('Session expired — please log back in and re-run');
+  }
   const errEl  = page.locator('.validation-summary-errors, .field-validation-error').first();
   const hasErr = await errEl.isVisible().catch(() => false);
   if (hasErr) {
