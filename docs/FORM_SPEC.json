@@ -7,7 +7,7 @@
     "case_year":  { "formName": "ProcedureYear", "type": "select", "options": { "1": "CA-1" } },
     "site":       { "formName": "Institutions",  "type": "select", "options": { "51592": "AdventHealth Orlando", "55630": "Center for Pain Management - Orlando" } },
     "supervisor": { "formName": "Attendings",    "type": "select" },
-    "patient_age":{ "formName": "PatientTypes",  "type": "checkbox", "options": { "33": "12–65 yr", "34": "≥65 yr" } },
+    "patient_age":{ "formName": "PatientTypes",  "type": "select", "options": { "33": "12–65 yr", "34": "≥65 yr" } },
     "asa": { "type": "checkbox_by_id", "options": {
       "156628": "ASA 1", "156632": "ASA 2", "156634": "ASA 3",
       "156636": "ASA 4", "156630": "ASA 5", "156631": "ASA 6",
