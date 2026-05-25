@@ -1,8 +1,7 @@
 const CACHE = 'acgme-v1';
 const ASSETS = [
   './case_log.html',
-  './manifest.json',
-  'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700&display=swap'
+  './manifest.json'
 ];
 
 self.addEventListener('install', e => {
