@@ -1,0 +1,13 @@
+{
+  "name": "acgme-tool",
+  "version": "1.0.0",
+  "description": "Case log capture and auto-submission tool for ACGME ADS portal",
+  "main": "automation/submit.js",
+  "scripts": {
+    "submit": "node automation/submit.js",
+    "test": "node automation/submit.js --dry-run"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0"
+  }
+}
