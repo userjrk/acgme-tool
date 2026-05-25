@@ -1,55 +1,70 @@
-# ACGME Case Log Automator — Project Context
-
-## Goal
-Automatically submit saved case log entries to the ACGME ADS portal
-(https://apps.acgme.org/ads/CaseLogs/CaseEntry/Insert) using browser automation.
-
-## Input
-A JSON file exported from the case entry web app. Each entry looks like:
 {
-  "id": 1234567890,
-  "case_date": "2026-05-24",
-  "case_id": "optional epic #",
-  "case_year": "1",
-  "site": "51592",
-  "supervisor": "741070",
-  "supervisor_name": "Cole, Britten",
-  "patient_age": "33",
-  "life_threat": null,
-  "difficult_airway": null,
-  "asa": ["156634"],
-  "anesthesia": ["1256330"],
-  "airway": ["156654"],
-  "proc": [],
-  "vasc": [],
-  "mon": [],
-  "neuraxial": [],
-  "pnb_site": []
+  "endpoint": "https://apps.acgme.org/ads/CaseLogs/CaseEntry/Insert",
+  "method": "POST",
+  "fields": {
+    "case_date":  { "formName": "0aa470cfec674edb8dfea78bae7c6db66d00275bb229ac151f877a914c53ab32", "type": "text", "format": "M/D/YYYY" },
+    "case_id":    { "formName": "241b5737466b842c64632223ab521623e1f224192dba83882fe0672ba38c7be4", "type": "text" },
+    "case_year":  { "formName": "ProcedureYear", "type": "select", "options": { "1": "CA-1" } },
+    "site":       { "formName": "Institutions",  "type": "select", "options": { "51592": "AdventHealth Orlando", "55630": "Center for Pain Management - Orlando" } },
+    "supervisor": { "formName": "Attendings",    "type": "select" },
+    "patient_age":{ "formName": "PatientTypes",  "type": "checkbox", "options": { "33": "12–65 yr", "34": "≥65 yr" } },
+    "asa": { "type": "checkbox_by_id", "options": {
+      "156628": "ASA 1", "156632": "ASA 2", "156634": "ASA 3",
+      "156636": "ASA 4", "156630": "ASA 5", "156631": "ASA 6",
+      "156629": "1E", "156633": "2E", "156635": "3E", "156637": "4E", "156626": "5E"
+    }},
+    "life_threat": { "type": "radio_by_id", "options": { "46": "Non-Trauma Life-Threatening", "134": "Trauma Life-Threatening" } },
+    "anesthesia": { "type": "checkbox_by_id", "options": {
+      "1256330": "General Maintenance", "156641": "MAC / Sedation",
+      "1256331": "Spinal", "1256332": "Epidural", "156646": "CSE",
+      "156648": "Single Shot PNB", "156647": "Continuous PNB"
+    }},
+    "airway": { "type": "checkbox_by_id", "options": {
+      "156654": "Oral ETT", "1256333": "Supraglottic Airway",
+      "1256334": "Direct Laryngoscopy", "1256335": "Indirect (Video) Laryngoscopy",
+      "156655": "Nasal ETT", "2298046": "Flex Bronchoscopic", "2298047": "Awake",
+      "156650": "Mask", "156666": "Jet Ventilation", "1256337": "Other"
+    }},
+    "difficult_airway": { "type": "radio_by_id", "options": { "148": "Anticipated", "149": "Unanticipated" } },
+    "lung_isolation": { "type": "checkbox_by_id", "options": { "156674": "Bronchial Blocker", "1256336": "DLT" } },
+    "proc": { "type": "checkbox_by_id", "subcategories": {
+      "cardiac":       { "156682": "Cardiac w/o CPB", "156681": "Cardiac with CPB" },
+      "major_vessels": { "156685": "Endovascular", "156684": "Open" },
+      "intracerebral": { "156688": "Endovascular", "156689": "Nonvasc Open", "156687": "Vascular Open" },
+      "delivery":      { "156692": "C-Section", "156686": "C-Section (high-risk)", "156690": "Vaginal Delivery", "156691": "Vaginal Delivery (high-risk)" },
+      "other":         { "156683": "Intrathoracic Non-Cardiac" }
+    }},
+    "vasc":    { "type": "checkbox_by_id", "options": { "1256338": "Arterial Line", "1256339": "Central Venous", "156693": "US-Guided", "156700": "PA Catheter" } },
+    "mon":     { "type": "checkbox_by_id", "options": { "1256341": "CSF Drain", "156708": "IONM (Electrophysiologic)", "156707": "TEE" } },
+    "neuraxial":{ "type": "checkbox_by_id", "options": { "156722": "Lumbar", "156720": "T1-7", "156721": "T8-12", "156719": "Cervical", "156723": "Caudal" } },
+    "pnb_site":{ "type": "checkbox_by_id", "options": {
+      "1911477": "Adductor Canal", "156730": "Ankle", "156734": "Axillary",
+      "1911478": "Erector Spinae Plane", "156735": "Femoral", "156732": "Infraclavicular",
+      "156731": "Interscalene", "156737": "Lumbar Plexus", "156739": "Paravertebral",
+      "156729": "Popliteal", "1911476": "Quadratus Lumborum", "156738": "Retrobulbar",
+      "156740": "Saphenous", "156736": "Sciatic", "156733": "Supraclavicular",
+      "1911475": "Transverse Abdominal Plane (TAP)", "1256340": "Other"
+    }}
+  },
+  "supervisors": {
+    "743216": "Adkins, Jakob",    "738774": "Angert, Kevin",    "650569": "Ariani, Kayvan",
+    "743489": "Axelrod, Mac",     "650551": "Bissessar, Ravi",  "650444": "Bryskin, Robert",
+    "755003": "Capone, Nicholas", "743217": "Chacon, Joshua",   "741070": "Cole, Britten",
+    "650553": "Davidovich, Isaac","746882": "Doyle, Charles",   "650473": "Eberhardt, Kara",
+    "736431": "Fan, John",        "650545": "Freiberg, Stephen","755005": "Gallo, Elimio",
+    "741066": "Geubelle, Gregory","743219": "Gonzalez Ciccarelli, Luis","751637": "Grodin, Benjamin",
+    "748654": "Gutierrez, Marc",  "744373": "Hadaway, Jonathan","726834": "Hansen, Bradley",
+    "746884": "Hong, Andrew",     "742742": "Hulsey, Alina",    "741069": "Idigo, Nnaemeka",
+    "753976": "Kaiser, Eric",     "746885": "Kamdar, Jay",      "752636": "Kumar, Vikas",
+    "650548": "Mansfield, Frederick","741068": "Maziad, Jennifer","748656": "Merrell, Matthew",
+    "650461": "Michaels, Robert", "742437": "Moorjani, Arun",   "745309": "Newbern, Matthew",
+    "745303": "Norris, Frederick","741071": "O'Hara, Brian",    "726836": "Olin, Douglas",
+    "752635": "Parisian, David",  "748655": "Phillips, Justin", "744372": "Radmall, Brandon",
+    "742362": "Rasmussen, Aaron", "741065": "Rosemeier, Frank", "748657": "Schroeder, Gregory",
+    "745306": "Sefton, William",  "746883": "Silvestrini-Suarez, Marco","752634": "Solby, Bryan",
+    "651090": "Spalding, Howard", "650558": "Stewart, Douglas", "738764": "Stine, Todd",
+    "746886": "Stoner, Matthew",  "744374": "Strickland, Jeffrey","742743": "Tao, David",
+    "755008": "Tongson, Sebastian","743218": "Warner, Norman",  "650546": "Weinstein, Adam",
+    "650554": "Weltman, Nathan",  "726840": "Wieland, Tommy",  "752645": "Wilkhu, Harshdeep"
+  }
 }
-
-## ACGME Form Field Mapping
-All field IDs/names come from the form spec (see FORM_SPEC.json).
-The form POST endpoint is: https://apps.acgme.org/ads/CaseLogs/CaseEntry/Insert
-
-Key fields:
-- case_date → field name: 0aa470cfec674edb8dfea78bae7c6db66d00275bb229ac151f877a914c53ab32 (format M/D/YYYY)
-- case_id   → field name: 241b5737466b842c64632223ab521623e1f224192dba83882fe0672ba38c7be4
-- case_year → field name: ProcedureYear (value: "1")
-- site      → field name: Institutions (value: "51592" = AdventHealth)
-- supervisor→ field name: Attendings
-- patient_age → field name: PatientTypes
-- ASA checkboxes → field id = the value itself (e.g. id="156634")
-- anesthesia, airway, proc, vasc, mon, neuraxial, pnb_site → checkbox by id
-
-## Constraints
-- Requires active ACGME login session (cookies) — user logs in manually first
-- CSRF tokens likely required — browser automation (Playwright) is the right tool
-- One case submitted at a time; user reviews before each submit
-- After submission, script should pause and wait for user confirmation before next case
-
-## Preferred Stack
-Playwright (Python or Node) — user can run locally, already authenticated in browser
-
-## Files
-- FORM_SPEC.json — full field/value mapping from original form schema
-- cases_YYYY-MM-DD.json — exported case data from the web app
