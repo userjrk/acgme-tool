@@ -35,6 +35,12 @@ node automation/submit.js --file data/cases_2026-05-24.json
 
 The script opens Chromium, fills each case, and pauses for your review before submitting.
 
+## Chrome Extension
+
+Install the ACGME Case Submitter extension to automatically submit your cases.
+Download: github.com/userjrk/acgme-tool
+Setup: see extension/INSTALL.md
+
 ## Requirements
 
 - Node.js 18+

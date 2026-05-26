@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACGME Case Submitter</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div class="header-left">
+    <h1>Case Submitter</h1>
+    <div class="sub">AdventHealth · ACGME ADS</div>
+  </div>
+  <div class="status-pill" id="status-pill">
+    <div class="status-dot"></div>
+    <span id="status-text">Loading…</span>
+  </div>
+</div>
+
+<!-- ── NOT ON ACGME STATE ── -->
+<div class="not-acgme" id="not-acgme">
+  <div class="not-acgme-icon">🔒</div>
+  <h2>Log into ACGME first</h2>
+  <p>Navigate to the ACGME portal and log in,<br>then click the extension icon again.</p>
+  <a class="acgme-link" href="https://apps.acgme.org" target="_blank">Open ACGME →</a>
+</div>
+
+<!-- ── MAIN FLOW ── -->
+<div class="body" id="main-body">
+
+  <!-- Submission mode toggle -->
+  <div class="mode-toggle" id="mode-toggle">
+    <button class="mode-btn active" id="mode-review" data-mode="review">Review each case</button>
+    <button class="mode-btn" id="mode-auto" data-mode="auto">Auto-submit</button>
+  </div>
+
+  <!-- File picker -->
+  <div class="file-zone" id="file-zone">
+    <input type="file" id="file-input" accept=".json">
+    <div class="file-icon" id="file-icon">📂</div>
+    <div class="file-label" id="file-label">Select JSON export</div>
+    <div class="file-sub" id="file-sub">Exported from your ACGME Case Log app</div>
+  </div>
+
+  <!-- Case summary -->
+  <div class="case-summary" id="case-summary">
+    <div class="summary-row">
+      <span class="summary-label">Resident</span>
+      <span class="summary-val" id="sum-resident">—</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Cases to submit</span>
+      <span class="summary-val green" id="sum-total">—</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Already submitted</span>
+      <span class="summary-val amber" id="sum-already">—</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Date range</span>
+      <span class="summary-val" id="sum-dates">—</span>
+    </div>
+  </div>
+
+  <!-- Warning -->
+  <div class="warning" id="warning">
+    ⚠ Some cases were already submitted and will be skipped.
+  </div>
+
+  <!-- Case preview card (review mode) -->
+  <div class="case-preview" id="case-preview">
+    <div class="preview-header">
+      <span class="preview-counter" id="preview-counter">Case 1 of 7</span>
+    </div>
+    <div class="preview-details">
+      <div class="preview-date" id="preview-date"></div>
+      <div class="preview-tags" id="preview-tags"></div>
+    </div>
+    <div class="preview-actions">
+      <button class="action-btn primary" id="submit-next-btn" disabled>Submit &amp; Next →</button>
+      <button class="action-btn secondary" id="skip-btn" disabled>Skip →</button>
+    </div>
+  </div>
+
+  <!-- Progress (auto mode) -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-header">
+      <span id="progress-label">Submitting…</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Results list -->
+  <div class="results" id="results"></div>
+
+  <!-- Final summary -->
+  <div class="final-summary" id="final-summary">
+    <div class="final-stat">
+      <div class="final-num green" id="final-submitted">0</div>
+      <div class="final-label">Submitted</div>
+    </div>
+    <div class="divider"></div>
+    <div class="final-stat">
+      <div class="final-num red" id="final-failed">0</div>
+      <div class="final-label">Failed</div>
+    </div>
+    <div class="divider"></div>
+    <div class="final-stat">
+      <div class="final-num muted" id="final-skipped">0</div>
+      <div class="final-label">Skipped</div>
+    </div>
+  </div>
+
+  <!-- Submit button -->
+  <button class="submit-btn" id="submit-btn" disabled>
+    Select a file to begin
+  </button>
+
+  <!-- Export results -->
+  <button class="export-btn" id="export-btn">
+    ⬇ Export Submission Report
+  </button>
+
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
