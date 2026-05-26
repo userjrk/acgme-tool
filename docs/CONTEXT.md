@@ -8,6 +8,7 @@ Automatically submit saved case log entries to the ACGME ADS portal
 A JSON file exported from the case entry web app. Each entry looks like:
 {
   "id": 1234567890,
+  "resident_name": "John Doe",
   "case_date": "2026-05-24",
   "case_id": "optional epic #",
   "case_year": "1",
@@ -48,8 +49,15 @@ Key fields:
 - After submission, script should pause and wait for user confirmation before next case
 
 ## Preferred Stack
-Playwright (Python or Node) — user can run locally, already authenticated in browser
+Node.js + Playwright — user runs locally, already authenticated in browser
+
+## Submission Options
+Two ways to submit cases:
+1. **Playwright script** (`automation/submit.js`) — run locally with exported JSON file
+2. **Chrome extension** (`extension/`) — loads JSON in popup, fills and submits from within the browser session
 
 ## Files
 - FORM_SPEC.json — full field/value mapping from original form schema
 - cases_YYYY-MM-DD.json — exported case data from the web app
+- automation/submit.js — Node.js + Playwright batch submission script
+- extension/ — Chrome extension (MV3) for in-browser submission

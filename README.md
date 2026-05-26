@@ -37,10 +37,23 @@ The script opens Chromium, fills each case, and pauses for your review before su
 
 ## Chrome Extension
 
-Install the ACGME Case Submitter extension to automatically submit your cases.
-Download: github.com/userjrk/acgme-tool
-Setup: see extension/INSTALL.md
+Automatically fills and submits your saved cases to the ACGME portal.
+
 Install page: https://userjrk.github.io/acgme-tool/app/install.html
+
+- **Review mode** (recommended): fills one case at a time, you review and click Submit & Next
+- **Auto mode**: submits all cases without pausing
+
+Download the repo ZIP, load the `extension/` folder in Chrome as an unpacked extension.
+Full setup: see extension/INSTALL.md
+
+## Program-Wide Use
+
+Share the live app URL with other residents in the program:
+https://userjrk.github.io/acgme-tool/app/case_log.html
+
+Each resident enters their name once — it sticks. All cases sync to the shared Google Sheet automatically.
+Setup guide: docs/GOOGLE_SHEETS_SETUP.md
 
 ## Requirements
 

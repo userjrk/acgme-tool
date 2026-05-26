@@ -12,29 +12,36 @@ Ideas, planned features, and known issues. Updated as the project grows.
 - [x] Web app: CSV export
 - [x] Web app: backup reminder badge
 - [x] Form spec documented (field IDs, values, submit endpoint)
-- [ ] Playwright script: read JSON and submit cases to ACGME
-- [ ] Playwright script: pause between cases for user review
-- [ ] Playwright script: mark cases as submitted in JSON
-- [ ] End-to-end test with real ACGME login session
+- [x] Playwright script: read JSON and submit cases to ACGME
+- [x] Playwright script: pause between cases for user review
+- [x] Playwright script: mark cases as submitted in JSON
+- [x] PWA support (manifest + service worker, installable on iOS/Android)
+- [x] IndexedDB redundant storage (primary) + localStorage (mirror)
+- [x] Web Share API on iOS for JSON/CSV export
+- [x] GitHub Pages deployment
+- [x] Google Sheets integration (sync on each save)
+- [x] Resident name field (sticky, program-wide)
+- [x] Edit saved cases (✏️ button, full form repopulation, Update Case)
+- [x] Chrome extension — review mode + auto mode
+- [x] Extension install page (app/install.html)
+- [x] Design references archived in docs/design-references/
+- [ ] End-to-end test with real ACGME session
 
 ---
 
-## Next — Quality of Life
+## Up Next
 
-- [ ] Web app: notes/free-text field per case (not submitted, just for personal reference)
-- [ ] Web app: duplicate last case button (for days with similar back-to-back cases)
-- [ ] Web app: edit a saved case before exporting
-- [ ] Web app: case counter by category (how many generals, how many spinals this month)
-- [ ] Automation: dry-run mode that logs what would be submitted without actually submitting
-- [ ] Automation: resume from a partially completed batch (skip already-submitted cases)
+- [ ] Test Chrome extension against live ACGME portal
+- [ ] Verify Google Sheets sync is receiving data
+- [ ] Program-wide rollout to other residents
+- [ ] Case statistics dashboard
+- [ ] ACGME minimum tracker
 
 ---
 
 ## Later — Bigger Ideas
 
 - [ ] **Mobile PWA**: package the HTML app as an installable app on iPhone/Android home screen so it feels native
-- [ ] **Case statistics dashboard**: visualize case mix over time — cases by type, attending, ASA status, procedure category — useful for tracking toward ACGME minimums
-- [ ] **ACGME minimum tracker**: overlay required case numbers per category against what's been logged so far
 - [ ] **Multi-device sync**: move from localStorage to a lightweight cloud sync (could use a private GitHub Gist or Cloudflare KV) so cases entered on phone are available on laptop
 - [ ] **Auto-export on save**: optionally write each new case immediately to a file in a watched OneDrive/iCloud folder — eliminates the manual backup step
 - [ ] **Batch submission scheduling**: run the Playwright script on a schedule (e.g., Sunday night) so submission is truly automatic

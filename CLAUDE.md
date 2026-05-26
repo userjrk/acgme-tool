@@ -22,6 +22,7 @@ Hitting "Save Case" stores the entry in IndexedDB (primary) + localStorage (mirr
 Exports JSON and CSV backups. Syncs each saved case to Google Sheets.
 
 **Live URL:** `https://userjrk.github.io/acgme-tool/app/case_log.html`
+**Install page:** `https://userjrk.github.io/acgme-tool/app/install.html`
 
 **Part 2 — Automation Script** (`automation/submit.js`)
 Reads the exported JSON file.
@@ -42,18 +43,35 @@ acgme-tool/
 │   ├── CONTEXT.md                   ← extended background and design decisions
 │   ├── FORM_SPEC.json               ← full ACGME form field/value mapping
 │   ├── ROADMAP.md                   ← future features
-│   └── GOOGLE_SHEETS_SETUP.md      ← Google Sheets integration guide
+│   ├── GOOGLE_SHEETS_SETUP.md       ← Google Sheets integration guide
+│   └── design-references/           ← approved UI reference designs
+│       ├── README.md
+│       ├── case_log_reference.html
+│       ├── popup_reference.html
+│       └── edit_reference.html
 ├── app/
 │   ├── case_log.html                ← standalone web app (the live app)
-│   ├── case_log_reference.html      ← reference design (source of truth)
+│   ├── install.html                 ← Chrome extension install page
 │   ├── manifest.json                ← PWA manifest
 │   ├── service_worker.js            ← cache-first offline support
 │   └── icons/
 │       ├── icon-192.png
 │       └── icon-512.png
+├── extension/                       ← Chrome extension (MV3)
+│   ├── manifest.json
+│   ├── popup.html / popup.js        ← extension popup UI + logic
+│   ├── content.js                   ← fills ACGME form fields
+│   ├── background.js                ← service worker, handles navigation
+│   ├── styles.css
+│   ├── generate-icons.js            ← run once to regenerate PNG icons
+│   ├── INSTALL.md
+│   └── icons/
+│       ├── icon-16.png
+│       ├── icon-48.png
+│       └── icon-128.png
 ├── automation/
 │   └── submit.js                    ← Playwright submission script
-├── data/                            ← JSON exports (gitignored)
+├── data/                            ← JSON exports (gitignored, .gitkeep committed)
 └── .gitignore
 ```
 
@@ -68,6 +86,13 @@ acgme-tool/
 - **Google Sheets sync** — `sendToSheets()` fires on each save (fire-and-forget, non-blocking)
 - **Export** — JSON (Web Share on iOS) + CSV, download fallback on desktop
 - **PWA** — installable on iOS (Safari → Add to Home Screen) and Android
+- **Edit saved cases** — ✏️ button in saved cases panel repopulates the full form; Save button becomes "Update Case ✏️"; Cancel Edit restores clean state
+- **Chrome extension** — `extension/` folder, MV3
+  - Review mode (default): fills one case at a time, shows preview card, resident clicks "Submit & Next" or "Skip"
+  - Auto mode: submits all cases sequentially without pausing
+  - Submitted IDs tracked in `chrome.storage.local` to prevent duplicate submissions
+- **Extension install page** — `app/install.html`, live at `https://userjrk.github.io/acgme-tool/app/install.html`
+- **Design references** — approved UI reference files archived in `docs/design-references/`
 
 ### Google Sheets Config (in case_log.html script, near top)
 ```js
@@ -161,6 +186,10 @@ Full mapping in `docs/FORM_SPEC.json`.
 - [x] PWA — installable on iOS and Android
 - [x] Form spec documented
 - [x] Playwright submission script complete
+- [x] Edit saved cases (✏️ button, full form repopulation)
+- [x] Chrome extension — review mode + auto mode
+- [x] Extension install page (`app/install.html`)
+- [x] Design references archived in `docs/design-references/`
 - [ ] End-to-end test with real ACGME session
 
 ---
