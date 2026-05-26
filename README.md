@@ -40,6 +40,7 @@ The script opens Chromium, fills each case, and pauses for your review before su
 Install the ACGME Case Submitter extension to automatically submit your cases.
 Download: github.com/userjrk/acgme-tool
 Setup: see extension/INSTALL.md
+Install page: https://userjrk.github.io/acgme-tool/app/install.html
 
 ## Requirements
 

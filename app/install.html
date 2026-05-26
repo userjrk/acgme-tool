@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Install ACGME Case Submitter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1f2b;
+    --border: #2a3040;
+    --accent: #4fc3f7;
+    --accent2: #a78bfa;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --text: #e8eaf0;
+    --muted: #6b7a99;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  header .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .app-link {
+    font-size: 11px;
+    color: var(--muted);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all .15s;
+  }
+  .app-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    max-width: 640px;
+    margin: 48px auto 0;
+    padding: 0 24px;
+    text-align: center;
+  }
+  .hero-icon { font-size: 48px; margin-bottom: 20px; }
+  .hero h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .hero h2 span { color: var(--accent); }
+  .hero p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  /* ── DOWNLOAD BUTTON ── */
+  .download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: #0a0c10;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 16px 36px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all .2s;
+    text-decoration: none;
+    margin-bottom: 12px;
+  }
+  .download-btn:hover { background: #81d4fa; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,195,247,.2); }
+  .download-btn:active { transform: translateY(0); }
+  .download-note { font-size: 11px; color: var(--muted); margin-bottom: 48px; }
+
+  /* ── STEPS ── */
+  .steps-section {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  .steps-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .step {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    transition: all .2s;
+  }
+  .step:last-child { border-bottom: none; }
+  .step.completed .step-num { background: var(--green); color: #0a0c10; border-color: var(--green); }
+  .step.completed .step-title { color: var(--muted); text-decoration: line-through; }
+  .step.active .step-num { background: var(--accent); color: #0a0c10; border-color: var(--accent); box-shadow: 0 0 12px rgba(79,195,247,.3); }
+  .step.active .step-title { color: var(--accent); }
+
+  .step-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .3s;
+  }
+
+  .step-content { flex: 1; }
+  .step-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    transition: color .2s;
+  }
+  .step-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .step-desc code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--accent2);
+  }
+
+  /* Step action buttons */
+  .step-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+    text-decoration: none;
+  }
+  .step-btn-primary { background: var(--accent); color: #0a0c10; }
+  .step-btn-primary:hover { background: #81d4fa; }
+  .step-btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .step-btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Unzip illustration */
+  .unzip-visual {
+    margin-top: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 12px;
+  }
+  .unzip-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+  }
+  .unzip-row + .unzip-row { margin-top: 8px; }
+  .unzip-row .icon { font-size: 16px; flex-shrink: 0; }
+  .arrow { color: var(--accent); font-size: 14px; }
+
+  /* Drag visual */
+  .drag-visual {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .drag-folder {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    cursor: grab;
+    transition: all .2s;
+    user-select: none;
+  }
+  .drag-folder:hover { border-color: var(--accent); transform: scale(1.02); }
+  .drag-arrow {
+    font-size: 20px;
+    color: var(--muted);
+  }
+  .drag-target {
+    background: var(--surface2);
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    transition: all .2s;
+    flex: 1;
+    min-width: 140px;
+  }
+  .drag-target.highlight {
+    border-color: var(--accent);
+    background: rgba(79,195,247,.06);
+    color: var(--accent);
+  }
+
+  /* Done state */
+  .done-banner {
+    display: none;
+    background: rgba(74,222,128,.08);
+    border: 1px solid rgba(74,222,128,.3);
+    border-radius: 10px;
+    padding: 20px 24px;
+    text-align: center;
+    margin-top: 24px;
+  }
+  .done-banner.show { display: block; }
+  .done-banner h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--green);
+    margin-bottom: 8px;
+  }
+  .done-banner p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .done-banner a {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 10px 24px;
+    background: var(--green);
+    color: #0a0c10;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-radius: 6px;
+    text-decoration: none;
+  }
+
+  /* ── NOT CHROME ── */
+  .not-chrome {
+    display: none;
+    max-width: 480px;
+    margin: 60px auto;
+    padding: 32px 24px;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .not-chrome.show { display: block; }
+  .not-chrome h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .not-chrome p { font-size: 12px; color: var(--muted); line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>ACGME Case Submitter</h1>
+    <div class="sub">Chrome Extension · AdventHealth Anesthesia</div>
+  </div>
+  <a class="app-link" href="https://userjrk.github.io/acgme-tool/app/case_log.html">
+    Open Case Log App →
+  </a>
+</header>
+
+<!-- Not Chrome warning -->
+<div class="not-chrome" id="not-chrome">
+  <div style="font-size:40px;margin-bottom:16px">🌐</div>
+  <h2>Chrome Required</h2>
+  <p>This extension only works in Google Chrome.<br>
+  Open this page in Chrome to continue.<br><br>
+  You can still use the <a href="https://userjrk.github.io/acgme-tool/app/case_log.html" style="color:var(--accent)">Case Log app</a> on any browser or phone.</p>
+</div>
+
+<!-- Main content -->
+<div id="main-content">
+
+  <div class="hero">
+    <div class="hero-icon">🧩</div>
+    <h2>Install in <span>3 steps</span></h2>
+    <p>The ACGME Case Submitter extension automatically fills and submits your saved cases to the ACGME portal. One file download and two clicks.</p>
+
+    <a class="download-btn" id="download-btn"
+       href="https://github.com/userjrk/acgme-tool/archive/refs/heads/main.zip"
+       download onclick="startFlow()">
+      ⬇ Download Extension
+    </a>
+    <div class="download-note">acgme-tool-main.zip · Downloads automatically</div>
+  </div>
+
+  <div class="steps-section">
+    <div class="steps-title">Setup Steps</div>
+
+    <!-- Step 1 -->
+    <div class="step" id="step-1">
+      <div class="step-num" id="num-1">1</div>
+      <div class="step-content">
+        <div class="step-title">Unzip the downloaded file</div>
+        <div class="step-desc">
+          Find <code>acgme-tool-main.zip</code> in your Downloads folder
+          and unzip it. Then open the <code>extension</code> folder inside.
+          <div class="unzip-visual">
+            <div class="unzip-row">
+              <span class="icon">🗜</span>
+              <span>acgme-tool-main.zip</span>
+              <span class="arrow">→</span>
+              <span>📁 acgme-tool-main/</span>
+            </div>
+            <div class="unzip-row">
+              <span class="icon" style="opacity:0">.</span>
+              <span style="color:var(--muted);font-size:11px">└─</span>
+              <span>📁 extension/ ← this folder</span>
+            </div>
+          </div>
+        </div>
+        <button class="step-btn step-btn-primary" onclick="completeStep(1)">
+          ✓ Done — folder is unzipped
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step" id="step-2">
+      <div class="step-num" id="num-2">2</div>
+      <div class="step-content">
+        <div class="step-title">Open Chrome Extensions</div>
+        <div class="step-desc">
+          Click the button below to open Chrome's extensions page,
+          then drag the <code>extension</code> folder into the window.
+          <div class="drag-visual" style="margin-top:12px">
+            <div class="drag-folder" id="drag-folder"
+                 draggable="true"
+                 ondragstart="startDrag()"
+                 ondragend="endDrag()">
+              📁 extension/
+            </div>
+            <div class="drag-arrow">→</div>
+            <div class="drag-target" id="drag-target"
+                 ondragover="event.preventDefault(); this.classList.add('highlight')"
+                 ondragleave="this.classList.remove('highlight')"
+                 ondrop="handleDrop(event)">
+              Drop here or<br>click Load unpacked
+            </div>
+          </div>
+        </div>
+        <a class="step-btn step-btn-primary" href="chrome://extensions" target="_blank"
+           onclick="completeStep(2)" id="extensions-btn">
+          Open chrome://extensions →
+        </a>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step" id="step-3">
+      <div class="step-num" id="num-3">3</div>
+      <div class="step-content">
+        <div class="step-title">Pin to toolbar</div>
+        <div class="step-desc">
+          Click the 🧩 puzzle piece in your Chrome toolbar,
+          find <strong>ACGME Case Submitter</strong>,
+          and click the 📌 pin icon to keep it visible.
+        </div>
+        <button class="step-btn step-btn-primary" onclick="completeStep(3)">
+          ✓ Done — extension is pinned
+        </button>
+      </div>
+    </div>
+
+    <!-- Done banner -->
+    <div class="done-banner" id="done-banner">
+      <h3>✓ You're all set!</h3>
+      <p>
+        Log into ACGME, open your Case Log app, export your cases as JSON,
+        then click the extension icon in Chrome and upload the file.
+      </p>
+      <a href="https://apps.acgme.org" target="_blank">Open ACGME →</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Check if on Chrome
+const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+if (!isChrome) {
+  document.getElementById('main-content').style.display = 'none';
+  document.getElementById('not-chrome').classList.add('show');
+}
+
+// Track progress
+let currentStep = 0;
+let downloadStarted = false;
+
+function startFlow() {
+  downloadStarted = true;
+  setTimeout(() => {
+    setActive(1);
+  }, 800);
+}
+
+function setActive(step) {
+  // Remove active from all
+  [1,2,3].forEach(i => {
+    document.getElementById('step-' + i).classList.remove('active');
+  });
+  if (step <= 3) {
+    document.getElementById('step-' + step).classList.add('active');
+    // Scroll to step
+    document.getElementById('step-' + step).scrollIntoView({
+      behavior: 'smooth', block: 'center'
+    });
+  }
+  currentStep = step;
+}
+
+function completeStep(step) {
+  document.getElementById('step-' + step).classList.remove('active');
+  document.getElementById('step-' + step).classList.add('completed');
+  document.getElementById('num-' + step).textContent = '✓';
+
+  if (step < 3) {
+    setTimeout(() => setActive(step + 1), 300);
+  } else {
+    // All done
+    setTimeout(() => {
+      document.getElementById('done-banner').classList.add('show');
+      document.getElementById('done-banner').scrollIntoView({
+        behavior: 'smooth', block: 'center'
+      });
+    }, 300);
+  }
+}
+
+// Drag simulation (visual only — actual install requires Load unpacked)
+function startDrag() {
+  document.getElementById('drag-target').classList.add('highlight');
+}
+function endDrag() {
+  document.getElementById('drag-target').classList.remove('highlight');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drag-target').classList.remove('highlight');
+  document.getElementById('drag-target').innerHTML = '✓ Folder dropped!';
+  document.getElementById('drag-target').style.borderColor = 'var(--green)';
+  document.getElementById('drag-target').style.color = 'var(--green)';
+}
+
+// If user came back to page after downloading
+// (e.g. page was open, they downloaded, came back)
+window.addEventListener('focus', () => {
+  if (downloadStarted && currentStep === 0) setActive(1);
+});
+</script>
+</body>
+</html>
