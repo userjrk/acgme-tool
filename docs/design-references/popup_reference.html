@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACGME Case Submitter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1f2b;
+    --border: #2a3040;
+    --accent: #4fc3f7;
+    --accent2: #a78bfa;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --text: #e8eaf0;
+    --muted: #6b7a99;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    width: 380px;
+    min-height: 200px;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .header-left .sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    transition: all .2s;
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background .2s;
+  }
+  .status-pill.ready { border-color: var(--green); color: var(--green); }
+  .status-pill.ready .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-pill.error { border-color: var(--red); color: var(--red); }
+  .status-pill.error .status-dot { background: var(--red); }
+
+  /* ── BODY ── */
+  .body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ── FILE ZONE ── */
+  .file-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+  }
+  .file-zone:hover, .file-zone.drag { border-color: var(--accent); background: rgba(79,195,247,.04); }
+  .file-zone.loaded { border-color: var(--green); border-style: solid; background: rgba(74,222,128,.04); }
+  .file-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .file-icon { font-size: 24px; margin-bottom: 8px; }
+  .file-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .file-zone.loaded .file-label { color: var(--green); }
+  .file-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  /* ── CASE SUMMARY ── */
+  .case-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: none;
+  }
+  .case-summary.show { display: block; }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+  .summary-row + .summary-row { margin-top: 6px; }
+  .summary-label { color: var(--muted); }
+  .summary-val { color: var(--text); font-weight: 500; }
+  .summary-val.green { color: var(--green); }
+  .summary-val.amber { color: var(--amber); }
+
+  /* ── SUBMIT BUTTON ── */
+  .submit-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #0a0c10;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 13px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .submit-btn:hover:not(:disabled) { background: #81d4fa; }
+  .submit-btn:disabled {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    cursor: not-allowed;
+  }
+  .submit-btn.running { background: var(--amber); color: #0a0c10; }
+  .submit-btn.done { background: var(--green); color: #0a0c10; }
+
+  /* ── PROGRESS ── */
+  .progress-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .progress-wrap.show { display: flex; }
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .progress-bar-bg {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    width: 0%;
+    transition: width .3s ease;
+  }
+  .progress-bar-fill.done { background: var(--green); }
+
+  /* ── RESULTS LIST ── */
+  .results {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 180px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .results.show { display: flex; }
+  .result-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .result-icon { font-size: 12px; flex-shrink: 0; }
+  .result-text { flex: 1; color: var(--text); }
+  .result-text .attending { color: var(--muted); font-size: 10px; }
+  .result-item.success { border-color: rgba(74,222,128,.3); }
+  .result-item.fail { border-color: rgba(248,113,113,.3); }
+  .result-item.skip { border-color: rgba(107,122,153,.3); opacity: .6; }
+  .result-item.pending { border-color: rgba(79,195,247,.2); }
+
+  /* ── FINAL SUMMARY BAR ── */
+  .final-summary {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .final-summary.show { display: flex; justify-content: space-between; align-items: center; }
+  .final-stat { text-align: center; }
+  .final-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+  }
+  .final-num.green { color: var(--green); }
+  .final-num.red { color: var(--red); }
+  .final-num.muted { color: var(--muted); }
+  .final-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .divider { width: 1px; height: 32px; background: var(--border); }
+
+  /* ── EXPORT BUTTON ── */
+  .export-btn {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .15s;
+    display: none;
+  }
+  .export-btn.show { display: block; }
+  .export-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── NOT ON ACGME STATE ── */
+  .not-acgme {
+    padding: 24px 16px;
+    text-align: center;
+    display: none;
+  }
+  .not-acgme.show { display: block; }
+  .not-acgme-icon { font-size: 32px; margin-bottom: 12px; }
+  .not-acgme h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .not-acgme p { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .acgme-link {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: var(--accent);
+    color: #0a0c10;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 6px;
+    text-decoration: none;
+    letter-spacing: .04em;
+  }
+
+  /* ── WARNING BANNER ── */
+  .warning {
+    background: rgba(251,191,36,.08);
+    border: 1px solid rgba(251,191,36,.3);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 10px;
+    color: var(--amber);
+    display: none;
+    line-height: 1.5;
+  }
+  .warning.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div class="header-left">
+    <h1>Case Submitter</h1>
+    <div class="sub">AdventHealth · ACGME ADS</div>
+  </div>
+  <div class="status-pill ready" id="status-pill">
+    <div class="status-dot"></div>
+    <span id="status-text">Ready</span>
+  </div>
+</div>
+
+<!-- ── NOT ON ACGME STATE ── -->
+<div class="not-acgme" id="not-acgme">
+  <div class="not-acgme-icon">🔒</div>
+  <h2>Log into ACGME first</h2>
+  <p>Navigate to the ACGME portal and log in,<br>then click the extension icon again.</p>
+  <a class="acgme-link" href="https://apps.acgme.org" target="_blank">Open ACGME →</a>
+</div>
+
+<!-- ── MAIN FLOW ── -->
+<div class="body" id="main-body">
+
+  <!-- File picker -->
+  <div class="file-zone" id="file-zone">
+    <input type="file" id="file-input" accept=".json">
+    <div class="file-icon" id="file-icon">📂</div>
+    <div class="file-label" id="file-label">Select JSON export</div>
+    <div class="file-sub" id="file-sub">Exported from your ACGME Case Log app</div>
+  </div>
+
+  <!-- Case summary -->
+  <div class="case-summary" id="case-summary">
+    <div class="summary-row">
+      <span class="summary-label">Resident</span>
+      <span class="summary-val" id="sum-resident">—</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Cases to submit</span>
+      <span class="summary-val green" id="sum-total">—</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Already submitted</span>
+      <span class="summary-val amber" id="sum-already">—</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Date range</span>
+      <span class="summary-val" id="sum-dates">—</span>
+    </div>
+  </div>
+
+  <!-- Warning -->
+  <div class="warning" id="warning">
+    ⚠ Some cases were already submitted and will be skipped.
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-header">
+      <span id="progress-label">Submitting case 1 of 12…</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Results list -->
+  <div class="results" id="results"></div>
+
+  <!-- Final summary -->
+  <div class="final-summary" id="final-summary">
+    <div class="final-stat">
+      <div class="final-num green" id="final-submitted">0</div>
+      <div class="final-label">Submitted</div>
+    </div>
+    <div class="divider"></div>
+    <div class="final-stat">
+      <div class="final-num red" id="final-failed">0</div>
+      <div class="final-label">Failed</div>
+    </div>
+    <div class="divider"></div>
+    <div class="final-stat">
+      <div class="final-num muted" id="final-skipped">0</div>
+      <div class="final-label">Skipped</div>
+    </div>
+  </div>
+
+  <!-- Submit button -->
+  <button class="submit-btn" id="submit-btn" disabled>
+    Select a file to begin
+  </button>
+
+  <!-- Export results -->
+  <button class="export-btn" id="export-btn">
+    ⬇ Export Submission Report
+  </button>
+
+</div>
+
+<script>
+// ── DEMO / PREVIEW LOGIC ──
+// This simulates the full flow for design review.
+// In the real extension, this is replaced by actual
+// Playwright/content script logic.
+
+const fileZone = document.getElementById('file-zone');
+const fileInput = document.getElementById('file-input');
+const fileIcon = document.getElementById('file-icon');
+const fileLabel = document.getElementById('file-label');
+const fileSub = document.getElementById('file-sub');
+const caseSummary = document.getElementById('case-summary');
+const submitBtn = document.getElementById('submit-btn');
+const progressWrap = document.getElementById('progress-wrap');
+const progressLabel = document.getElementById('progress-label');
+const progressPct = document.getElementById('progress-pct');
+const progressFill = document.getElementById('progress-fill');
+const results = document.getElementById('results');
+const finalSummary = document.getElementById('final-summary');
+const exportBtn = document.getElementById('export-btn');
+const warning = document.getElementById('warning');
+
+// Simulate being on ACGME (in real extension, check actual tab URL)
+const onACGME = true;
+if (!onACGME) {
+  document.getElementById('main-body').style.display = 'none';
+  document.getElementById('not-acgme').classList.add('show');
+  document.getElementById('status-pill').className = 'status-pill error';
+  document.getElementById('status-text').textContent = 'Not on ACGME';
+}
+
+// Demo cases
+const demoCases = [
+  { id: 1, case_date: '2026-05-20', supervisor_name: 'Cole, Britten', resident_name: 'John K.' },
+  { id: 2, case_date: '2026-05-21', supervisor_name: 'Hansen, Bradley', resident_name: 'John K.' },
+  { id: 3, case_date: '2026-05-21', supervisor_name: 'Tao, David', resident_name: 'John K.' },
+  { id: 4, case_date: '2026-05-22', supervisor_name: 'Hong, Andrew', resident_name: 'John K.' },
+  { id: 5, case_date: '2026-05-23', supervisor_name: 'Rasmussen, Aaron', resident_name: 'John K.' },
+];
+const alreadySubmitted = new Set([1]); // id 1 already done
+
+fileInput.addEventListener('change', () => loadFile());
+fileZone.addEventListener('dragover', e => { e.preventDefault(); fileZone.classList.add('drag'); });
+fileZone.addEventListener('dragleave', () => fileZone.classList.remove('drag'));
+fileZone.addEventListener('drop', e => { e.preventDefault(); fileZone.classList.remove('drag'); loadFile(); });
+
+function loadFile() {
+  // Simulate file load
+  fileZone.classList.add('loaded');
+  fileIcon.textContent = '✓';
+  fileLabel.textContent = 'cases_2026-05-24.json';
+  fileSub.textContent = 'File loaded successfully';
+
+  const newCases = demoCases.filter(c => !alreadySubmitted.has(c.id));
+  const skipped = demoCases.length - newCases.length;
+
+  document.getElementById('sum-resident').textContent = 'John K.';
+  document.getElementById('sum-total').textContent = newCases.length + ' cases';
+  document.getElementById('sum-already').textContent = skipped + ' (will skip)';
+  document.getElementById('sum-dates').textContent = 'May 20 – 23, 2026';
+  caseSummary.classList.add('show');
+
+  if (skipped > 0) warning.classList.add('show');
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = `Submit ${newCases.length} Cases →`;
+}
+
+submitBtn.addEventListener('click', async () => {
+  if (submitBtn.classList.contains('done')) { reset(); return; }
+
+  submitBtn.disabled = true;
+  submitBtn.classList.add('running');
+  submitBtn.textContent = 'Submitting…';
+  progressWrap.classList.add('show');
+  results.classList.add('show');
+
+  const newCases = demoCases.filter(c => !alreadySubmitted.has(c.id));
+  const total = newCases.length;
+  let submitted = 0, failed = 0, skipped = 0;
+
+  // Show skipped cases first
+  demoCases.filter(c => alreadySubmitted.has(c.id)).forEach(c => {
+    addResult('skip', c, 'Already submitted');
+    skipped++;
+  });
+
+  // Simulate submission
+  for (let i = 0; i < newCases.length; i++) {
+    const c = newCases[i];
+    const pct = Math.round(((i) / total) * 100);
+    progressLabel.textContent = `Submitting case ${i + 1} of ${total}…`;
+    progressPct.textContent = pct + '%';
+    progressFill.style.width = pct + '%';
+
+    // Add pending item
+    const pendingEl = addResult('pending', c, 'Submitting…');
+
+    await sleep(800 + Math.random() * 400);
+
+    // Simulate success (90%) or failure (10%)
+    const success = Math.random() > 0.1;
+    pendingEl.className = 'result-item ' + (success ? 'success' : 'fail');
+    pendingEl.querySelector('.result-icon').textContent = success ? '✓' : '✗';
+    pendingEl.querySelector('.result-sub').textContent = success ? 'Submitted' : 'Failed — field not found';
+
+    if (success) submitted++;
+    else failed++;
+  }
+
+  // Done
+  progressFill.style.width = '100%';
+  progressFill.classList.add('done');
+  progressLabel.textContent = 'Done';
+  progressPct.textContent = '100%';
+
+  document.getElementById('final-submitted').textContent = submitted;
+  document.getElementById('final-failed').textContent = failed;
+  document.getElementById('final-skipped').textContent = skipped;
+  finalSummary.classList.add('show');
+  exportBtn.classList.add('show');
+
+  submitBtn.disabled = false;
+  submitBtn.classList.remove('running');
+  submitBtn.classList.add('done');
+  submitBtn.textContent = failed > 0
+    ? `Done · ${failed} failed — tap to reset`
+    : 'All done · Tap to reset';
+});
+
+function addResult(type, c, sub) {
+  const el = document.createElement('div');
+  el.className = 'result-item ' + type;
+  const icons = { success: '✓', fail: '✗', skip: '→', pending: '⋯' };
+  el.innerHTML = `
+    <span class="result-icon">${icons[type]}</span>
+    <div class="result-text">
+      <div>${c.case_date} · ${c.supervisor_name}</div>
+      <div class="attending result-sub">${sub}</div>
+    </div>
+  `;
+  results.appendChild(el);
+  results.scrollTop = results.scrollHeight;
+  return el;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function reset() {
+  fileZone.classList.remove('loaded');
+  fileIcon.textContent = '📂';
+  fileLabel.textContent = 'Select JSON export';
+  fileSub.textContent = 'Exported from your ACGME Case Log app';
+  caseSummary.classList.remove('show');
+  warning.classList.remove('show');
+  progressWrap.classList.remove('show');
+  results.classList.remove('show');
+  results.innerHTML = '';
+  finalSummary.classList.remove('show');
+  exportBtn.classList.remove('show');
+  progressFill.style.width = '0%';
+  progressFill.classList.remove('done');
+  submitBtn.classList.remove('done', 'running');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Select a file to begin';
+  fileInput.value = '';
+}
+
+exportBtn.addEventListener('click', () => {
+  alert('In the real extension, this downloads a JSON report of all submission results.');
+});
+</script>
+</body>
+</html>

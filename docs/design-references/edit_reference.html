@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit Case Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1f2b;
+    --border: #2a3040;
+    --accent: #4fc3f7;
+    --accent2: #a78bfa;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --text: #e8eaf0;
+    --muted: #6b7a99;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .panel-inner {
+    width: 100%;
+    max-width: 680px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .panel-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── CASE ITEM ── */
+  .case-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+    transition: background .15s;
+  }
+  .case-item:last-child { border-bottom: none; }
+  .case-item:hover { background: rgba(255,255,255,.02); }
+
+  .case-date {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .case-meta {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .case-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ── ACTION BUTTONS ── */
+  .case-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    padding-top: 2px;
+  }
+
+  /* Edit button */
+  .edit-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+  }
+  .edit-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(79,195,247,.08);
+  }
+  .edit-btn:hover .tooltip { opacity: 1; transform: translateX(-50%) translateY(-2px); }
+
+  /* Delete button */
+  .del-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .del-btn:hover { color: var(--red); border-color: var(--red); background: rgba(248,113,113,.06); }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: all .15s;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── EDITING STATE — highlighted case ── */
+  .case-item.editing {
+    background: rgba(79,195,247,.06);
+    border-left: 3px solid var(--accent);
+    padding-left: 17px;
+  }
+  .case-item.editing .edit-btn {
+    background: rgba(79,195,247,.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .case-item.editing .case-date { color: var(--accent); }
+
+  /* ── PANEL ACTIONS ── */
+  .panel-actions {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .panel-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 9px 16px;
+    min-height: 44px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    letter-spacing: .04em;
+  }
+  .pb-json { background: var(--accent2); color: #fff; }
+  .pb-csv { background: var(--green); color: #0a0c10; }
+  .pb-import { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .pb-clear { background: none; color: var(--red); border: 1px solid var(--red); margin-left: auto; }
+
+  /* ── EDIT MODE BANNER ── */
+  .edit-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: rgba(79,195,247,.08);
+    border-bottom: 1px solid rgba(79,195,247,.2);
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .edit-banner.show { display: flex; }
+  .cancel-edit-btn {
+    background: none;
+    border: 1px solid rgba(79,195,247,.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .cancel-edit-btn:hover { background: rgba(79,195,247,.1); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--accent);
+    color: #0a0c10;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 24px;
+    border-radius: 8px;
+    opacity: 0;
+    transition: opacity .3s, transform .3s;
+    pointer-events: none;
+    z-index: 300;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="panel-inner">
+
+  <div class="panel-header">
+    <h2>Saved Cases (4)</h2>
+    <button class="panel-close">✕</button>
+  </div>
+
+  <!-- Edit mode banner — shows when a case is being edited -->
+  <div class="edit-banner" id="edit-banner">
+    <span>✏️ Editing case — form is populated below</span>
+    <button class="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
+  </div>
+
+  <!-- Case 1 -->
+  <div class="case-item" id="case-1">
+    <div>
+      <div class="case-date">2026-05-23</div>
+      <div class="case-meta">John K. · Cole, Britten</div>
+      <div class="case-tags">
+        <span class="tag">12–65 yr</span>
+        <span class="tag">ASA 2</span>
+        <span class="tag">General Maint.</span>
+        <span class="tag">Oral ETT</span>
+        <span class="tag">Arterial Line</span>
+      </div>
+    </div>
+    <div class="case-actions">
+      <button class="edit-btn" onclick="editCase('case-1', '2026-05-23')" title="Edit">
+        ✏️
+        <span class="tooltip">Edit case</span>
+      </button>
+      <button class="del-btn" onclick="deleteCase('case-1')" title="Delete">✕</button>
+    </div>
+  </div>
+
+  <!-- Case 2 -->
+  <div class="case-item" id="case-2">
+    <div>
+      <div class="case-date">2026-05-22</div>
+      <div class="case-meta">John K. · Hansen, Bradley</div>
+      <div class="case-tags">
+        <span class="tag">12–65 yr</span>
+        <span class="tag">ASA 3</span>
+        <span class="tag">General Maint.</span>
+        <span class="tag">Oral ETT</span>
+        <span class="tag">Direct</span>
+        <span class="tag">IONM</span>
+        <span class="tag">Intracranial Nonvasc</span>
+      </div>
+    </div>
+    <div class="case-actions">
+      <button class="edit-btn" onclick="editCase('case-2', '2026-05-22')" title="Edit">
+        ✏️
+        <span class="tooltip">Edit case</span>
+      </button>
+      <button class="del-btn" onclick="deleteCase('case-2')" title="Delete">✕</button>
+    </div>
+  </div>
+
+  <!-- Case 3 -->
+  <div class="case-item" id="case-3">
+    <div>
+      <div class="case-date">2026-05-21</div>
+      <div class="case-meta">John K. · Tao, David</div>
+      <div class="case-tags">
+        <span class="tag">≥65 yr</span>
+        <span class="tag">ASA 4</span>
+        <span class="tag">Spinal</span>
+        <span class="tag">Lumbar</span>
+        <span class="tag">Adductor Canal</span>
+        <span class="tag">Single Shot</span>
+      </div>
+    </div>
+    <div class="case-actions">
+      <button class="edit-btn" onclick="editCase('case-3', '2026-05-21')" title="Edit">
+        ✏️
+        <span class="tooltip">Edit case</span>
+      </button>
+      <button class="del-btn" onclick="deleteCase('case-3')" title="Delete">✕</button>
+    </div>
+  </div>
+
+  <!-- Case 4 -->
+  <div class="case-item" id="case-4">
+    <div>
+      <div class="case-date">2026-05-20</div>
+      <div class="case-meta">John K. · Rasmussen, Aaron</div>
+      <div class="case-tags">
+        <span class="tag">12–65 yr</span>
+        <span class="tag">ASA 2</span>
+        <span class="tag">MAC / Sedation</span>
+        <span class="tag">Supraglottic</span>
+      </div>
+    </div>
+    <div class="case-actions">
+      <button class="edit-btn" onclick="editCase('case-4', '2026-05-20')" title="Edit">
+        ✏️
+        <span class="tooltip">Edit case</span>
+      </button>
+      <button class="del-btn" onclick="deleteCase('case-4')" title="Delete">✕</button>
+    </div>
+  </div>
+
+  <div class="panel-actions">
+    <button class="panel-btn pb-json">⬇ JSON</button>
+    <button class="panel-btn pb-csv">⬇ CSV</button>
+    <button class="panel-btn pb-import">↑ Import</button>
+    <button class="panel-btn pb-clear">Delete All</button>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+let currentlyEditing = null;
+
+function editCase(id, date) {
+  // If already editing this case, do nothing
+  if (currentlyEditing === id) return;
+
+  // Remove editing state from any previously edited case
+  if (currentlyEditing) {
+    document.getElementById(currentlyEditing).classList.remove('editing');
+  }
+
+  // Set new editing state
+  currentlyEditing = id;
+  document.getElementById(id).classList.add('editing');
+  document.getElementById('edit-banner').classList.add('show');
+
+  showToast(`✏️ Editing case ${date} — form populated`);
+}
+
+function cancelEdit() {
+  if (currentlyEditing) {
+    document.getElementById(currentlyEditing).classList.remove('editing');
+    currentlyEditing = null;
+  }
+  document.getElementById('edit-banner').classList.remove('show');
+  showToast('Edit cancelled');
+}
+
+function deleteCase(id) {
+  if (currentlyEditing === id) {
+    cancelEdit();
+  }
+  const el = document.getElementById(id);
+  el.style.opacity = '0';
+  el.style.transition = 'opacity .2s';
+  setTimeout(() => el.remove(), 200);
+  showToast('Case deleted');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>
