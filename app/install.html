@@ -198,6 +198,7 @@
   }
   .step-btn-primary { background: var(--accent); color: #0a0c10; }
   .step-btn-primary:hover { background: #81d4fa; }
+  .step-btn-primary.copied { background: var(--green); color: #0a0c10; }
   .step-btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
   .step-btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -325,7 +326,7 @@
 <header>
   <div>
     <h1>ACGME Case Submitter</h1>
-    <div class="sub">Chrome Extension · AdventHealth Anesthesia</div>
+    <div class="sub">Chrome Extension · AdventHealth Anesthesia · v1.3.0</div>
   </div>
   <a class="app-link" href="https://userjrk.github.io/acgme-tool/app/case_log.html">
     Open Case Log App →
@@ -350,11 +351,11 @@
     <p>The ACGME Case Submitter extension automatically fills and submits your saved cases to the ACGME portal. One file download and two clicks.</p>
 
     <a class="download-btn" id="download-btn"
-       href="https://github.com/userjrk/acgme-tool/archive/refs/heads/main.zip"
-       download onclick="startFlow()">
+       href="https://github.com/userjrk/acgme-tool/raw/main/extension/acgme-case-submitter.zip"
+       download="acgme-case-submitter.zip" onclick="startFlow()">
       ⬇ Download Extension
     </a>
-    <div class="download-note">acgme-tool-main.zip · Downloads automatically</div>
+    <div class="download-note">acgme-case-submitter.zip · Downloads automatically</div>
   </div>
 
   <div class="steps-section">
@@ -364,21 +365,16 @@
     <div class="step" id="step-1">
       <div class="step-num" id="num-1">1</div>
       <div class="step-content">
-        <div class="step-title">Unzip the downloaded file</div>
+        <div class="step-title">Unzip acgme-case-submitter.zip</div>
         <div class="step-desc">
-          Find <code>acgme-tool-main.zip</code> in your Downloads folder
-          and unzip it. Then open the <code>extension</code> folder inside.
+          Find <code>acgme-case-submitter.zip</code> in your Downloads folder
+          and unzip it. You will get a single folder ready to load directly into Chrome.
           <div class="unzip-visual">
             <div class="unzip-row">
               <span class="icon">🗜</span>
-              <span>acgme-tool-main.zip</span>
+              <span>acgme-case-submitter.zip</span>
               <span class="arrow">→</span>
-              <span>📁 acgme-tool-main/</span>
-            </div>
-            <div class="unzip-row">
-              <span class="icon" style="opacity:0">.</span>
-              <span style="color:var(--muted);font-size:11px">└─</span>
-              <span>📁 extension/ ← this folder</span>
+              <span>📁 acgme-case-submitter/ ← load this into Chrome</span>
             </div>
           </div>
         </div>
@@ -394,14 +390,15 @@
       <div class="step-content">
         <div class="step-title">Open Chrome Extensions</div>
         <div class="step-desc">
-          Click the button below to open Chrome's extensions page,
-          then drag the <code>extension</code> folder into the window.
+          Click the button below to copy the URL, paste it in your Chrome address bar,
+          then click <strong>Load unpacked</strong> and select the
+          <code>acgme-case-submitter</code> folder.
           <div class="drag-visual" style="margin-top:12px">
             <div class="drag-folder" id="drag-folder"
                  draggable="true"
                  ondragstart="startDrag()"
                  ondragend="endDrag()">
-              📁 extension/
+              📁 acgme-case-submitter/
             </div>
             <div class="drag-arrow">→</div>
             <div class="drag-target" id="drag-target"
@@ -412,10 +409,13 @@
             </div>
           </div>
         </div>
-        <a class="step-btn step-btn-primary" href="chrome://extensions" target="_blank"
-           onclick="completeStep(2)" id="extensions-btn">
-          Open chrome://extensions →
-        </a>
+        <button class="step-btn step-btn-primary" id="extensions-btn"
+                onclick="copyExtensionsUrl()">
+          📋 Copy extensions URL
+        </button>
+        <div id="extensions-instruction" style="font-size:11px;color:var(--muted);margin-top:8px;display:none">
+          Paste it in your Chrome address bar and press Enter
+        </div>
       </div>
     </div>
 
@@ -520,6 +520,21 @@ function handleDrop(e) {
 window.addEventListener('focus', () => {
   if (downloadStarted && currentStep === 0) setActive(1);
 });
+
+function copyExtensionsUrl() {
+  navigator.clipboard.writeText('chrome://extensions').then(() => {
+    const btn = document.getElementById('extensions-btn');
+    const instr = document.getElementById('extensions-instruction');
+    btn.textContent = '✓ Copied — paste in address bar';
+    btn.classList.add('copied');
+    instr.style.display = 'block';
+    completeStep(2);
+    setTimeout(() => {
+      btn.textContent = '📋 Copy extensions URL';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
 </script>
 </body>
 </html>

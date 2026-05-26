@@ -249,6 +249,12 @@ body {
 .action-btn.secondary:hover:not(:disabled) { color: var(--text); border-color: var(--text); }
 .action-btn:disabled { opacity: .5; cursor: not-allowed; }
 
+/* ── REFILL BUTTON (restore mode) ── */
+#refill-btn { display: none; }
+.preview-actions.restore { flex-wrap: wrap; }
+.preview-actions.restore #refill-btn { display: flex; align-items: center; justify-content: center; flex: 1; }
+.preview-actions.restore #skip-btn { width: 100%; flex: none; }
+
 /* ── PROGRESS ── */
 .progress-wrap {
   display: none;
