@@ -343,19 +343,102 @@
     background: none;
     border: 1px solid var(--border);
     color: var(--muted);
-    font-size: 11px;
-    padding: 3px 8px;
-    min-width: 44px;
-    min-height: 44px;
+    font-size: 13px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .del-btn:hover { color: var(--red); border-color: var(--red); background: rgba(248,113,113,.06); }
+
+  .case-item:hover { background: rgba(255,255,255,.02); }
+
+  .case-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    padding-top: 2px;
+  }
+
+  .case-date {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .edit-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+  }
+  .edit-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(79,195,247,.08); }
+  .edit-btn:hover .tooltip { opacity: 1; transform: translateX(-50%) translateY(-2px); }
+
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: all .15s;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .case-item.editing {
+    background: rgba(79,195,247,.06);
+    border-left: 3px solid var(--accent);
+    padding-left: 17px;
+  }
+  .case-item.editing .edit-btn { background: rgba(79,195,247,.15); border-color: var(--accent); color: var(--accent); }
+  .case-item.editing .case-date { color: var(--accent); }
+
+  .edit-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: rgba(79,195,247,.08);
+    border-bottom: 1px solid rgba(79,195,247,.2);
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .edit-banner.show { display: flex; }
+  .cancel-edit-btn {
+    background: none;
+    border: 1px solid rgba(79,195,247,.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
     border-radius: 4px;
     cursor: pointer;
-    transition: .15s;
-    flex-shrink: 0;
+    transition: all .15s;
   }
-  .del-btn:hover { color: var(--red); border-color: var(--red); }
+  .cancel-edit-btn:hover { background: rgba(79,195,247,.1); }
 
   .panel-actions {
     padding: 14px 20px;
@@ -790,7 +873,7 @@
 </main>
 
 <div class="submit-bar">
-  <button class="btn btn-clear" onclick="clearForm(false)">Clear</button>
+  <button class="btn btn-clear" onclick="editingIndex!==null?cancelEdit():clearForm(false)">Clear</button>
   <button class="btn btn-save" onclick="saveCase()">+ Save Case</button>
 </div>
 
@@ -800,6 +883,10 @@
     <div class="panel-header">
       <h2>Saved Cases (<span id="panel-count">0</span>)</h2>
       <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+    <div class="edit-banner" id="edit-banner">
+      <span>✏️ Editing case — form is populated below</span>
+      <button class="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
     </div>
     <div id="case-list"></div>
     <div class="panel-actions">
@@ -867,6 +954,7 @@ Object.entries(supervisors).forEach(([id, name]) => supervisorByName[name] = id)
 // ════════════════════════════════════════════════════
 let cases = [];
 let lastBackupCount = 0;
+let editingIndex = null;
 const chipState = {};
 const ynState = {};
 
@@ -1143,11 +1231,24 @@ async function saveCase() {
     pnb_site: ynState['pnb_site'] === 'yes' && chipState['pnb_site'] ? [...chipState['pnb_site']] : [],
   };
 
-  cases.push(entry);
+  let toastMsg;
+  if (editingIndex !== null) {
+    entry.id = cases[editingIndex].id;
+    cases[editingIndex] = entry;
+    toastMsg = '✓ Case updated';
+    editingIndex = null;
+    const saveBtn = document.querySelector('.btn-save');
+    saveBtn.textContent = '+ Save Case';
+    saveBtn.style.background = '';
+    document.getElementById('edit-banner').classList.remove('show');
+  } else {
+    cases.push(entry);
+    toastMsg = '✓ Case saved (' + cases.length + ' total)';
+  }
   await persistAll(); // saves to both IndexedDB and localStorage
   sendToSheets(entry); // fire-and-forget, non-blocking
   updateCount();
-  showToast('✓ Case saved (' + cases.length + ' total)');
+  showToast(toastMsg);
   clearForm(true);
   checkBackupReminder();
 }
@@ -1211,6 +1312,136 @@ function checkBackupReminder() {
 }
 
 // ════════════════════════════════════════════════════
+// EDIT CASE
+// ════════════════════════════════════════════════════
+function editCase(i) {
+  const c = cases[i];
+  editingIndex = i;
+
+  closePanel();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Populate text/select fields
+  document.getElementById('resident_name').value = c.resident_name || '';
+  document.getElementById('case_date').value = c.case_date || '';
+  document.getElementById('case_id').value = c.case_id || '';
+  document.getElementById('site').value = c.site || '';
+  document.getElementById('case_year').value = c.case_year || '';
+  if (c.supervisor_name) {
+    document.getElementById('supervisor').value = c.supervisor_name;
+    document.getElementById('sticky-tag').style.display = 'inline';
+    localStorage.setItem('acgme_last_supervisor', c.supervisor_name);
+  }
+
+  // Clear chip/yn state
+  Object.keys(chipState).forEach(k => {
+    if (chipState[k] instanceof Set) chipState[k] = new Set();
+    else chipState[k] = null;
+  });
+  document.querySelectorAll('.chip.selected, .chip.auto').forEach(ch => ch.classList.remove('selected', 'auto'));
+  Object.keys(ynState).forEach(s => {
+    ynState[s] = 'no';
+    const ynEl = document.getElementById('yn-' + s);
+    if (ynEl) {
+      ynEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      const noBtn = ynEl.querySelector('.no');
+      if (noBtn) noBtn.classList.add('active');
+    }
+    const sec = document.getElementById('sec-' + s);
+    if (sec) sec.classList.remove('open');
+  });
+  document.querySelectorAll('.collapsible').forEach(col => {
+    if (col.id === 'asa-other' || col.id === 'airway-more') col.classList.remove('open');
+  });
+
+  const findChip = val => document.querySelector(`[data-val="${val}"]`);
+
+  // patient_age (radio)
+  if (c.patient_age) {
+    const chip = findChip(c.patient_age);
+    if (chip) selectRadio('patient_age', chip);
+  }
+
+  // asa, anesthesia, airway (multi-select)
+  (c.asa || []).forEach(val => { const chip = findChip(val); if (chip) toggleChip('asa', chip); });
+  (c.anesthesia || []).forEach(val => { const chip = findChip(val); if (chip) toggleChip('anesthesia', chip); });
+  (c.airway || []).forEach(val => { const chip = findChip(val); if (chip) toggleChip('airway', chip); });
+
+  // airway_other (DLT)
+  if ((c.airway || []).includes('1256336')) setYN('airway_other', 'yes');
+
+  // proc — expand relevant subgroups first, then toggle chips
+  const cardiacVals = new Set(['156682', '156681']);
+  const vesselVals = new Set(['156685', '156684']);
+  const intraVals = new Set(['156688', '156689', '156687']);
+  const deliveryVals = new Set(['156692', '156686', '156690', '156691']);
+  const otherVals = new Set(['156683']);
+  (c.proc || []).forEach(val => {
+    if (cardiacVals.has(val)) setYN('proc_cardiac', 'yes');
+    if (vesselVals.has(val)) setYN('proc_vessels', 'yes');
+    if (intraVals.has(val)) setYN('proc_intra', 'yes');
+    if (deliveryVals.has(val)) setYN('proc_delivery', 'yes');
+    if (otherVals.has(val)) setYN('proc_other', 'yes');
+    const chip = findChip(val);
+    if (chip) toggleChip('proc', chip);
+  });
+
+  // vasc, mon, neuraxial, pnb_site
+  if ((c.vasc || []).length > 0) {
+    setYN('vasc', 'yes');
+    c.vasc.forEach(val => { const chip = findChip(val); if (chip) toggleChip('vasc', chip); });
+  }
+  if ((c.mon || []).length > 0) {
+    setYN('mon', 'yes');
+    c.mon.forEach(val => { const chip = findChip(val); if (chip) toggleChip('mon', chip); });
+  }
+  if ((c.neuraxial || []).length > 0) {
+    setYN('neuraxial', 'yes');
+    c.neuraxial.forEach(val => { const chip = findChip(val); if (chip) toggleChip('neuraxial', chip); });
+  }
+  if ((c.pnb_site || []).length > 0) {
+    setYN('pnb_site', 'yes');
+    c.pnb_site.forEach(val => { const chip = findChip(val); if (chip) toggleChip('pnb_site', chip); });
+  }
+
+  // life_threat
+  if (c.life_threat) {
+    setYN('life_threat', 'yes');
+    const chip = findChip(c.life_threat);
+    if (chip) selectRadio('life_threat', chip);
+  }
+
+  // difficult_airway
+  if (c.difficult_airway) {
+    setYN('airway_other', 'yes');
+    const chip = findChip(c.difficult_airway);
+    if (chip) selectRadio('difficult_airway', chip);
+  }
+
+  // Apply auto-selection rules
+  checkDLT();
+  checkIntra();
+
+  // Change Save button to Update mode
+  const saveBtn = document.querySelector('.btn-save');
+  saveBtn.textContent = 'Update Case ✏️';
+  saveBtn.style.background = 'var(--accent2)';
+
+  // Show edit banner
+  document.getElementById('edit-banner').classList.add('show');
+}
+
+function cancelEdit() {
+  editingIndex = null;
+  clearForm(true);
+  const saveBtn = document.querySelector('.btn-save');
+  saveBtn.textContent = '+ Save Case';
+  saveBtn.style.background = '';
+  document.getElementById('edit-banner').classList.remove('show');
+  showToast('Edit cancelled');
+}
+
+// ════════════════════════════════════════════════════
 // SAVED CASES PANEL
 // ════════════════════════════════════════════════════
 function openPanel() { renderPanel(); document.getElementById('saved-panel').classList.add('open'); }
@@ -1239,19 +1470,30 @@ function renderPanel() {
       ...(c.patient_age ? [c.patient_age] : []),
     ];
     const tags = allVals.map(v => chipLabels[v] || v).filter(Boolean);
-    return `<div class="case-item">
+    return `<div class="case-item${editingIndex === i ? ' editing' : ''}" id="case-item-${i}">
       <div>
-        <strong style="font-size:13px">${c.case_date}${c.case_id ? ' · ' + c.case_id : ''}</strong>
+        <div class="case-date">${c.case_date}${c.case_id ? ' · ' + c.case_id : ''}</div>
         <div class="case-meta">${c.resident_name ? c.resident_name + ' · ' : ''}${c.supervisor_name || supervisors[c.supervisor] || ''}</div>
         <div class="case-tags">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
       </div>
-      <button class="del-btn" onclick="deleteCase(${i})">✕</button>
+      <div class="case-actions">
+        <button class="edit-btn" onclick="editCase(${i})" title="Edit">
+          ✏️
+          <span class="tooltip">Edit case</span>
+        </button>
+        <button class="del-btn" onclick="deleteCase(${i})" title="Delete">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
 
 async function deleteCase(i) {
   if (!confirm('Delete this case?')) return;
+  if (editingIndex === i) {
+    cancelEdit();
+  } else if (editingIndex !== null && editingIndex > i) {
+    editingIndex--;
+  }
   const deleted = cases.splice(i, 1)[0];
   await idbDelete(deleted.id);
   localStorage.setItem('acgme_cases', JSON.stringify(cases));
