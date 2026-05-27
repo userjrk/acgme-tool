@@ -61,6 +61,7 @@ const previewActions = document.getElementById('preview-actions');
 const refillBtn      = document.getElementById('refill-btn');
 const submitNextBtn  = document.getElementById('submit-next-btn');
 const skipBtn        = document.getElementById('skip-btn');
+const startOverBtn   = document.getElementById('start-over-btn');
 
 // ── SESSION PERSISTENCE ──
 async function saveSession() {
@@ -145,6 +146,7 @@ async function restoreSession(session) {
     submitBtn.disabled = true;
     submitBtn.classList.add('running');
     resultsEl.classList.add('show');
+    startOverBtn.classList.add('show');
 
     allCases
       .filter(c => !newCases.find(nc => nc.id === c.id))
@@ -167,6 +169,7 @@ async function restoreSession(session) {
   submitBtn.textContent = newCases.length > 0
     ? (submissionMode === 'review' ? `Review ${newCases.length} Cases →` : `Submit ${newCases.length} Cases →`)
     : 'No new cases to submit';
+  startOverBtn.classList.add('show');
 }
 
 function showRestoredCase(idx) {
@@ -291,6 +294,7 @@ async function handleFile(file) {
   submitBtn.textContent = newCases.length > 0
     ? (submissionMode === 'review' ? `Review ${newCases.length} Cases →` : `Submit ${newCases.length} Cases →`)
     : 'No new cases to submit';
+  startOverBtn.classList.add('show');
 
   await saveSession();
 }
@@ -314,6 +318,7 @@ submitBtn.addEventListener('click', async () => {
   sessionResults = [];
   currentIdx = 0;
   sessionStatus = 'running';
+  startOverBtn.classList.add('show');
 
   allCases.filter(c => submittedIds.has(c.id)).forEach(c => addResult('skip', c, 'Already submitted'));
 
@@ -524,6 +529,7 @@ async function finishAll() {
   submitBtn.textContent = failed > 0
     ? `Done · ${failed} failed — tap to reset`
     : 'All done · Tap to reset';
+  startOverBtn.classList.remove('show');
 
   statusPill.className = 'status-pill ready';
   statusText.textContent = 'Done';
@@ -610,11 +616,23 @@ async function resetAll() {
   submitBtn.classList.remove('done', 'running');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Select a file to begin';
+  startOverBtn.classList.remove('show');
   fileInput.value = '';
   statusPill.className = 'status-pill ready';
   statusText.textContent = 'Ready';
   await clearSession();
 }
+
+// ── START OVER ──
+startOverBtn.addEventListener('click', async () => {
+  if (sessionStatus === 'running') {
+    const ok = confirm(
+      'This will cancel remaining cases. Cases already submitted are saved and won\'t be resubmitted. Continue?'
+    );
+    if (!ok) return;
+  }
+  await resetAll();
+});
 
 // ── HELPERS ──
 function msgBackground(msg) {

@@ -333,6 +333,26 @@ body {
 .final-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
 .divider { width: 1px; height: 32px; background: var(--border); }
 
+/* ── START OVER BUTTON ── */
+.start-over-btn {
+  width: 100%;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .15s;
+  display: none;
+}
+.start-over-btn.show { display: block; }
+.start-over-btn:hover { border-color: var(--red); color: var(--red); }
+
 /* ── EXPORT BUTTON ── */
 .export-btn {
   width: 100%;
