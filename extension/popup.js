@@ -186,7 +186,7 @@ function showRestoredCase(idx) {
   ].filter(Boolean);
   previewTags.innerHTML = tagVals
     .map(v => LABELS[v] ? `<span class="preview-tag">${LABELS[v]}</span>` : '')
-    .join('');
+    .join('') + (c.note ? `<div class="preview-note">📝 ${c.note}</div>` : '');
 
   statusPill.className = 'status-pill ready';
   statusText.textContent = 'Session restored';
@@ -355,7 +355,7 @@ async function fillNextCaseForReview(idx) {
   ].filter(Boolean);
   previewTags.innerHTML = tagVals
     .map(v => LABELS[v] ? `<span class="preview-tag">${LABELS[v]}</span>` : '')
-    .join('');
+    .join('') + (c.note ? `<div class="preview-note">📝 ${c.note}</div>` : '');
 
   submitNextBtn.disabled = true;
   skipBtn.disabled = true;

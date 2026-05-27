@@ -331,6 +331,7 @@
   .case-item:last-child { border-bottom: none; }
   .case-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .case-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .case-note { font-size: 11px; color: var(--muted); margin-top: 5px; font-style: italic; }
   .tag {
     font-size: 10px;
     padding: 2px 8px;
@@ -871,6 +872,16 @@
     </div>
   </div>
 
+  <!-- Note -->
+  <div class="card">
+    <div class="card-header"><span class="dot"></span>Note (optional)</div>
+    <div class="card-body">
+      <input type="text" id="case_note"
+             placeholder="e.g. right knee, elderly male, difficult airway"
+             autocomplete="off">
+    </div>
+  </div>
+
 </main>
 
 <div class="submit-bar">
@@ -1230,6 +1241,7 @@ async function saveCase() {
     mon: ynState['mon'] === 'yes' && chipState['mon'] ? [...chipState['mon']] : [],
     neuraxial: ynState['neuraxial'] === 'yes' && chipState['neuraxial'] ? [...chipState['neuraxial']] : [],
     pnb_site: ynState['pnb_site'] === 'yes' && chipState['pnb_site'] ? [...chipState['pnb_site']] : [],
+    note: document.getElementById('case_note').value.trim(),
   };
 
   let toastMsg;
@@ -1263,6 +1275,7 @@ function clearForm(preserveSticky) {
     document.getElementById('sticky-tag').style.display = 'none';
   }
   document.getElementById('case_id').value = '';
+  document.getElementById('case_note').value = '';
 
   Object.keys(chipState).forEach(k => {
     if (chipState[k] instanceof Set) chipState[k] = new Set();
@@ -1326,6 +1339,7 @@ function editCase(i) {
   document.getElementById('resident_name').value = c.resident_name || '';
   document.getElementById('case_date').value = c.case_date || '';
   document.getElementById('case_id').value = c.case_id || '';
+  document.getElementById('case_note').value = c.note || '';
   document.getElementById('site').value = c.site || '';
   document.getElementById('case_year').value = c.case_year || '';
   if (c.supervisor_name) {
@@ -1476,6 +1490,7 @@ function renderPanel() {
         <div class="case-date">${c.case_date}${c.case_id ? ' · ' + c.case_id : ''}</div>
         <div class="case-meta">${c.resident_name ? c.resident_name + ' · ' : ''}${c.supervisor_name || supervisors[c.supervisor] || ''}</div>
         <div class="case-tags">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+        ${c.note ? `<div class="case-note">📝 ${c.note}</div>` : ''}
       </div>
       <div class="case-actions">
         <button class="edit-btn" onclick="editCase(${i})" title="Edit">
@@ -1585,7 +1600,7 @@ async function exportCSV() {
     'resident_name','case_date','case_id','case_year','site','supervisor',
     'patient_age','life_threatening','difficult_airway',
     'asa','anesthesia_type','airway_management','procedure_category',
-    'vascular_access','monitoring','neuraxial_site','pnb_site'
+    'vascular_access','monitoring','neuraxial_site','pnb_site','note'
   ];
   const rows = cases.map(c => [
     c.resident_name || '',
@@ -1603,6 +1618,7 @@ async function exportCSV() {
     (c.mon || []).map(v => chipLabels[v]||v).join('|'),
     (c.neuraxial || []).map(v => chipLabels[v]||v).join('|'),
     (c.pnb_site || []).map(v => chipLabels[v]||v).join('|'),
+    c.note || '',
   ].map(v => `"${String(v).replace(/"/g,'""')}"`));
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
   const filename = `acgme_cases_${new Date().toISOString().split('T')[0]}.csv`;
