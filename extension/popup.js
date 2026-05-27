@@ -32,6 +32,7 @@ let submissionMode = 'review';
 let sessionStatus = 'idle';
 let currentFileName = '';
 let currentResidentName = '';
+let detectManual = true; // default ON, loaded from storage in init
 
 // ── DOM REFS ──
 const statusPill     = document.getElementById('status-pill');
@@ -61,7 +62,8 @@ const previewActions = document.getElementById('preview-actions');
 const refillBtn      = document.getElementById('refill-btn');
 const submitNextBtn  = document.getElementById('submit-next-btn');
 const skipBtn        = document.getElementById('skip-btn');
-const startOverBtn   = document.getElementById('start-over-btn');
+const startOverBtn      = document.getElementById('start-over-btn');
+const detectManualToggle = document.getElementById('detect-manual-toggle');
 
 // ── SESSION PERSISTENCE ──
 async function saveSession() {
@@ -101,10 +103,12 @@ async function clearSession() {
 
   const [{ session }, localStored] = await Promise.all([
     chrome.storage.session.get(['session']),
-    chrome.storage.local.get(['submission_mode', 'submitted_case_ids']),
+    chrome.storage.local.get(['submission_mode', 'submitted_case_ids', 'detect_manual']),
   ]);
 
   submittedIds = new Set(localStored.submitted_case_ids || []);
+  detectManual = localStored.detect_manual !== false; // default ON
+  applyDetectManualUI();
 
   if (session && ['loaded', 'running', 'done'].includes(session.status)) {
     await restoreSession(session);
@@ -241,6 +245,18 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => setMode(btn.dataset.mode));
 });
 
+// ── DETECT MANUAL TOGGLE ──
+function applyDetectManualUI() {
+  detectManualToggle.textContent = detectManual ? 'ON' : 'OFF';
+  detectManualToggle.classList.toggle('active', detectManual);
+}
+
+detectManualToggle.addEventListener('click', () => {
+  detectManual = !detectManual;
+  applyDetectManualUI();
+  chrome.storage.local.set({ detect_manual: detectManual });
+});
+
 // ── FILE INPUT ──
 fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
 fileZone.addEventListener('dragover', e => { e.preventDefault(); fileZone.classList.add('drag'); });
@@ -366,7 +382,7 @@ async function fillNextCaseForReview(idx) {
   await saveSession();
 
   try {
-    const res = await msgBackground({ type: 'FILL_CASE', caseData: c, autoSubmit: false });
+    const res = await msgBackground({ type: 'FILL_CASE', caseData: c, autoSubmit: false, detectManual });
     if (res.reason === 'not_logged_in') { handleNotLoggedIn(); return; }
   } catch (e) {
     addResult('fail', c, 'Could not fill form');
@@ -393,7 +409,7 @@ refillBtn.addEventListener('click', async () => {
   statusPill.className = 'status-pill';
 
   try {
-    const res = await msgBackground({ type: 'FILL_CASE', caseData: c, autoSubmit: false });
+    const res = await msgBackground({ type: 'FILL_CASE', caseData: c, autoSubmit: false, detectManual });
     if (res.reason === 'not_logged_in') { handleNotLoggedIn(); return; }
   } catch (e) {
     statusText.textContent = 'Fill failed';
@@ -448,6 +464,8 @@ skipBtn.addEventListener('click', async () => {
   submitNextBtn.disabled = true;
   refillBtn.disabled = true;
   previewActions.classList.remove('restore');
+
+  msgBackground({ type: 'CANCEL_WATCH' }).catch(() => {});
 
   const c = newCases[currentIdx];
   addResult('skip', c, 'Skipped');
@@ -511,6 +529,7 @@ async function startAutoMode() {
 
 // ── FINISH ──
 async function finishAll() {
+  msgBackground({ type: 'CANCEL_WATCH' }).catch(() => {});
   const submitted = sessionResults.filter(r => r.status === 'success').length;
   const failed = sessionResults.filter(r => r.status === 'fail').length;
   const preSessionSkipped = allCases.length - newCases.length;
@@ -596,6 +615,7 @@ exportBtn.addEventListener('click', () => {
 
 // ── RESET ──
 async function resetAll() {
+  msgBackground({ type: 'CANCEL_WATCH' }).catch(() => {});
   allCases = []; newCases = []; sessionResults = []; currentIdx = 0;
   sessionStatus = 'idle'; currentFileName = ''; currentResidentName = '';
   fileZone.classList.remove('loaded');
@@ -621,6 +641,35 @@ async function resetAll() {
   statusPill.className = 'status-pill ready';
   statusText.textContent = 'Ready';
   await clearSession();
+}
+
+// ── MANUAL SUBMIT DETECTION ──
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'MANUAL_SUBMITTED'
+      && sessionStatus === 'running'
+      && submissionMode === 'review') {
+    handleManualSubmit();
+  }
+});
+
+async function handleManualSubmit() {
+  // Guard: ignore if buttons already disabled (Submit & Next already in flight)
+  if (submitNextBtn.disabled && !skipBtn.disabled === false) return;
+
+  submitNextBtn.disabled = true;
+  skipBtn.disabled = true;
+  refillBtn.disabled = true;
+
+  const c = newCases[currentIdx];
+  addResult('success', c, 'Submitted');
+  sessionResults.push({ case: c, status: 'success' });
+  const { submitted_case_ids: ids = [] } = await chrome.storage.local.get(['submitted_case_ids']);
+  ids.push(c.id);
+  await chrome.storage.local.set({ submitted_case_ids: ids });
+  statusPill.className = 'status-pill ready';
+  statusText.textContent = 'Ready';
+  await saveSession();
+  await fillNextCaseForReview(currentIdx + 1);
 }
 
 // ── START OVER ──

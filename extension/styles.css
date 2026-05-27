@@ -103,6 +103,31 @@ body {
 }
 .mode-btn:not(.active):hover { color: var(--text); }
 
+/* ── SETTING ROW (detect manual submit) ── */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  padding: 0 2px;
+}
+.setting-label { letter-spacing: .02em; }
+.toggle-btn {
+  font-family: 'Syne', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  padding: 3px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+}
+.toggle-btn.active { background: rgba(79,195,247,.12); border-color: var(--accent); color: var(--accent); }
+
 /* ── FILE ZONE ── */
 .file-zone {
   border: 1.5px dashed var(--border);

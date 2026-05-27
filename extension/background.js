@@ -3,9 +3,16 @@
 const ACGME_INSERT_URL = 'https://apps.acgme.org/ads/CaseLogs/CaseEntry/Insert';
 const INSERT_PATH_LC   = '/caselogs/caseentry/insert';
 
+// Cancellation token for the persistent manual-submit watcher
+let manualWatchCancel = null;
+
+function cancelManualWatch() {
+  if (manualWatchCancel) { manualWatchCancel(); manualWatchCancel = null; }
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'FILL_CASE') {
-    handleFillCase(msg.caseData, msg.autoSubmit)
+    handleFillCase(msg.caseData, msg.autoSubmit, msg.detectManual)
       .then(sendResponse)
       .catch(err => sendResponse({ success: false, reason: err.message }));
     return true;
@@ -16,11 +23,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch(err => sendResponse({ success: false, reason: err.message }));
     return true;
   }
+  if (msg.type === 'CANCEL_WATCH') {
+    cancelManualWatch();
+    sendResponse({ ok: true });
+  }
 });
 
-async function handleFillCase(caseData, autoSubmit) {
+async function handleFillCase(caseData, autoSubmit, detectManual) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) throw new Error('No active tab');
+
+  // Cancel any existing manual watcher before navigating
+  cancelManualWatch();
 
   // Navigate to Insert page and wait for it to load
   const loadPromise = waitForTabLoad(tab.id);
@@ -35,6 +49,10 @@ async function handleFillCase(caseData, autoSubmit) {
   });
 
   if (!autoSubmit) {
+    // Start a persistent watcher so manual page submission advances the popup
+    if (detectManual && fillRes && fillRes.filled) {
+      startManualWatch(tab.id);
+    }
     return fillRes; // { filled: true } — popup will handle submit separately
   }
 
@@ -50,9 +68,59 @@ async function handleSubmitCurrent() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) throw new Error('No active tab');
 
+  // Cancel manual watcher before clicking submit to prevent double-fire
+  cancelManualWatch();
+
   // content.js clicks submit synchronously; we detect result via tab navigation
   await chrome.tabs.sendMessage(tab.id, { type: 'SUBMIT_FORM' });
   return await waitForSubmissionResult(tab.id);
+}
+
+// Persistent watcher for manual submissions in review mode.
+// Fires chrome.runtime.sendMessage({type:'MANUAL_SUBMITTED'}) to the popup.
+function startManualWatch(tabId) {
+  cancelManualWatch();
+  let cancelled = false;
+
+  // Auto-expire after 2 minutes so the listener doesn't leak indefinitely
+  const expiry = setTimeout(() => { cancelled = true; }, 120000);
+
+  manualWatchCancel = () => {
+    cancelled = true;
+    clearTimeout(expiry);
+    chrome.tabs.onUpdated.removeListener(listener);
+  };
+
+  function listener(id, changeInfo, tab) {
+    if (cancelled || id !== tabId) return;
+    if (changeInfo.status !== 'complete') return;
+    const url = (tab.url || '').toLowerCase();
+    if (!url.includes(INSERT_PATH_LC)) return;
+
+    // Remove immediately and mark done so it only fires once
+    manualWatchCancel = null;
+    cancelled = true;
+    clearTimeout(expiry);
+    chrome.tabs.onUpdated.removeListener(listener);
+
+    setTimeout(async () => {
+      try {
+        const [{ result }] = await chrome.scripting.executeScript({
+          target: { tabId },
+          func: () => {
+            const el = document.getElementById('server-success');
+            return el && el.textContent.includes('successfully')
+              ? { success: true } : { success: false };
+          },
+        });
+        if (result.success) {
+          chrome.runtime.sendMessage({ type: 'MANUAL_SUBMITTED' });
+        }
+      } catch (e) { /* popup may be closed — ignore */ }
+    }, 3000);
+  }
+
+  chrome.tabs.onUpdated.addListener(listener);
 }
 
 // Watch the tab for the Insert page reload ACGME does after submission.
