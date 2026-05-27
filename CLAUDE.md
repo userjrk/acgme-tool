@@ -5,6 +5,44 @@ Do not delete it. Update it as the project evolves.
 
 ---
 
+## Critical Working Rules
+
+This project has multiple working features used in a 
+real clinical setting. Breaking existing functionality 
+is worse than not fixing new things.
+
+Before touching ANY file:
+1. Read it completely first
+2. Identify exactly what needs to change
+3. Make only the targeted change — nothing else
+4. Do not refactor, rename, or reorganize code 
+   that is not directly related to the current task
+
+Before each commit:
+- Verify the specific feature you changed still works
+- Verify features in adjacent files are not broken
+- If you are unsure whether a change is safe, STOP
+  and explain the risk before proceeding
+
+Files with working features — touch with extreme care:
+- app/case_log.html — live PWA used daily
+- extension/popup.js — submission logic, state persistence
+- extension/content.js — ACGME form filling
+- extension/background.js — tab monitoring, messaging
+- automation/submit.js — Playwright batch script
+
+If a session is interrupted mid-task:
+- Read CLAUDE.md and the task prompt again from scratch
+- Check git log to see what was already completed
+- Check git diff to see any uncommitted partial changes
+- Do NOT assume prior state — verify everything
+- Commit completed work before starting the next section
+
+One section at a time. Commit after each. Never batch 
+multiple sections into one commit.
+
+---
+
 ## Who This Is For
 
 John, CA-1 anesthesia resident at AdventHealth Orlando.
