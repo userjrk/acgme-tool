@@ -132,13 +132,8 @@ acgme-tool/
 - **Extension install page** — `app/install.html`, live at `https://userjrk.github.io/acgme-tool/app/install.html`
 - **Design references** — approved UI reference files archived in `docs/design-references/`
 
-### Google Sheets Config (in case_log.html script, near top)
-```js
-const SHEETS_CONFIG = {
-  enabled: true,
-  url: 'https://script.google.com/macros/s/AKfycbwT7tkwK4lkWusT1x49DiGA0LpT9YJI7XuCMdy-erL1XLnWJhM3o46oFROd8KnDxXDz/exec',
-};
-```
+### Google Sheets Config
+Google Sheets URL: see `app/case_log.html` SHEETS_CONFIG (not stored in docs for security)
 
 ---
 
