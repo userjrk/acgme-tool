@@ -12,10 +12,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
   if (msg.type === 'SUBMIT_FORM') {
-    submitForm()
-      .then(sendResponse)
-      .catch(err => sendResponse({ success: false, reason: err.message }));
-    return true;
+    try { sendResponse(submitForm()); }
+    catch (err) { sendResponse({ submitted: false, reason: err.message }); }
   }
 });
 
@@ -97,7 +95,7 @@ async function fillForm(c, autoSubmit) {
   return await submitForm();
 }
 
-async function submitForm() {
+function submitForm() {
   const submitEl = document.querySelector(
     'input[type="submit"], button[type="submit"]'
   );
@@ -106,24 +104,10 @@ async function submitForm() {
   } else {
     const form = document.querySelector('form');
     if (form) form.submit();
-    else return { success: false, reason: 'submit_button_not_found' };
+    else return { submitted: false, reason: 'submit_button_not_found' };
   }
-
-  // Poll for redirect away from insert page (up to 10 seconds)
-  const success = await pollForSuccess(10000);
-  if (!success) return { success: false, reason: 'timeout' };
-  return { success: true };
-}
-
-async function pollForSuccess(timeout) {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    const url = window.location.href.toLowerCase();
-    if (!url.includes(INSERT_PATH)) return true;
-    if (document.querySelector('.alert-success, .success-message')) return true;
-    await sleep(500);
-  }
-  return false;
+  // Return immediately — background.js detects success via tab navigation
+  return { submitted: true };
 }
 
 function waitForElement(selector, timeout) {
