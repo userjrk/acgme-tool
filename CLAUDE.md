@@ -41,6 +41,26 @@ If a session is interrupted mid-task:
 One section at a time. Commit after each. Never batch 
 multiple sections into one commit.
 
+## Service Worker Cache Version Rule
+
+Every time app/case_log.html is modified and pushed,
+the cache version key in app/service_worker.js MUST
+be updated to match the current version number.
+
+Format: 'acgme-cache-v{VERSION}'
+Example: 'acgme-cache-v1.4.0'
+
+This ensures existing PWA users automatically receive
+the latest version of the app without reinstalling.
+
+Failure to update the cache version means users on
+older installs will continue running stale code and
+will not see new features or bug fixes.
+
+This is a required step in every commit that touches
+app/case_log.html — treat it the same as updating
+the version number in extension/manifest.json.
+
 ---
 
 ## Who This Is For
