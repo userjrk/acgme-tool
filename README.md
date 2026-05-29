@@ -43,9 +43,12 @@ Install page: https://userjrk.github.io/acgme-tool/app/install.html
 
 - **Review mode** (recommended): fills one case at a time, you review and click Submit & Next
 - **Auto mode**: submits all cases without pausing
+- **Detect manual submit** (ON/OFF toggle): detects when you submit the ACGME form directly
+- **Resubmit override**: re-queue previously submitted cases via checkbox + Apply button
+- **Session persistence**: popup restores state if closed and reopened mid-session
 
-Download the repo ZIP, load the `extension/` folder in Chrome as an unpacked extension.
-Full setup: see extension/INSTALL.md
+Visit the install page for setup instructions and the latest download:
+https://userjrk.github.io/acgme-tool/app/install.html
 
 ## Program-Wide Use
 

@@ -33,7 +33,7 @@ let sessionStatus = 'idle';
 let currentFileName = '';
 let currentResidentName = '';
 let detectManual = true; // default ON, loaded from storage in init
-let previouslySumbittedCases = [];
+let previouslySubmittedCases = [];
 
 // ── DOM REFS ──
 const statusPill     = document.getElementById('status-pill');
@@ -286,7 +286,7 @@ async function handleFile(file) {
   allCases = parsed;
   const stored = await chrome.storage.local.get(['submitted_case_ids']);
   submittedIds = new Set(stored.submitted_case_ids || []);
-  previouslySumbittedCases = allCases.filter(c => submittedIds.has(c.id));
+  previouslySubmittedCases = allCases.filter(c => submittedIds.has(c.id));
   newCases = allCases.filter(c => !submittedIds.has(c.id));
   currentFileName = file.name;
   currentResidentName = allCases[0]?.resident_name || '';
@@ -307,8 +307,8 @@ async function handleFile(file) {
   document.getElementById('sum-dates').textContent = dates;
   caseSummary.classList.add('show');
 
-  if (previouslySumbittedCases.length > 0) {
-    warning.innerHTML = previouslySumbittedCases.map(c =>
+  if (previouslySubmittedCases.length > 0) {
+    warning.innerHTML = previouslySubmittedCases.map(c =>
       `<label class="resubmit-row"><input type="checkbox" class="resubmit-check" data-id="${c.id}"> ` +
       `${c.case_date} · ${c.supervisor_name || '—'} ` +
       `<span class="resubmit-hint">(already submitted — check to resubmit)</span></label>`
@@ -348,7 +348,7 @@ resubmitApplyBtn.addEventListener('click', async () => {
   );
   if (checkedIds.size === 0) return;
 
-  const resubmitCases = previouslySumbittedCases.filter(c => checkedIds.has(c.id));
+  const resubmitCases = previouslySubmittedCases.filter(c => checkedIds.has(c.id));
   const { submitted_case_ids: storedIds = [] } = await chrome.storage.local.get(['submitted_case_ids']);
   const updatedIds = storedIds.filter(id => !checkedIds.has(id));
   await chrome.storage.local.set({ submitted_case_ids: updatedIds });
@@ -663,7 +663,7 @@ exportBtn.addEventListener('click', () => {
 // ── RESET ──
 async function resetAll() {
   msgBackground({ type: 'CANCEL_WATCH' }).catch(() => {});
-  allCases = []; newCases = []; previouslySumbittedCases = []; sessionResults = []; currentIdx = 0;
+  allCases = []; newCases = []; previouslySubmittedCases = []; sessionResults = []; currentIdx = 0;
   sessionStatus = 'idle'; currentFileName = ''; currentResidentName = '';
   fileZone.classList.remove('loaded');
   fileIcon.textContent = '📂';
@@ -703,7 +703,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 async function handleManualSubmit() {
   // Guard: ignore if buttons already disabled (Submit & Next already in flight)
-  if (submitNextBtn.disabled && !skipBtn.disabled === false) return;
+  if (submitNextBtn.disabled && skipBtn.disabled) return;
 
   submitNextBtn.disabled = true;
   skipBtn.disabled = true;

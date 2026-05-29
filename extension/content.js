@@ -2,7 +2,6 @@
 
 const DATE_FIELD   = '0aa470cfec674edb8dfea78bae7c6db66d00275bb229ac151f877a914c53ab32';
 const CASEID_FIELD = '241b5737466b842c64632223ab521623e1f224192dba83882fe0672ba38c7be4';
-const INSERT_PATH  = 'ads/caselogs/caseentry/insert';
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'FILL_FORM') {
@@ -104,7 +103,7 @@ function submitForm() {
   } else {
     const form = document.querySelector('form');
     if (form) form.submit();
-    else return { submitted: false, reason: 'submit_button_not_found' };
+    else return { success: false, reason: 'submit_button_not_found' };
   }
   // Return immediately — background.js detects success via tab navigation
   return { submitted: true };

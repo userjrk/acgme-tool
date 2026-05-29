@@ -1,4 +1,4 @@
-const CACHE = 'acgme-cache-v1.4.3';
+const CACHE = 'acgme-cache-v1.4.4';
 const ASSETS = [
   './case_log.html',
   './manifest.json'

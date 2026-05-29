@@ -103,21 +103,42 @@ function startManualWatch(tabId) {
     clearTimeout(expiry);
     chrome.tabs.onUpdated.removeListener(listener);
 
-    setTimeout(async () => {
+    // Poll every 500ms for up to 5 seconds for #server-success to render
+    const pollDeadline = Date.now() + 5000;
+    let polling = true;
+    const pollInterval = setInterval(async () => {
+      if (!polling) return;
       try {
         const [{ result }] = await chrome.scripting.executeScript({
           target: { tabId },
           func: () => {
-            const el = document.getElementById('server-success');
-            return el && el.textContent.includes('successfully')
-              ? { success: true } : { success: false };
+            const successEl = document.getElementById('server-success');
+            if (successEl && successEl.textContent.includes('successfully')) {
+              return { found: true };
+            }
+            const errorEl = document.getElementById('clienterrors');
+            if (errorEl && errorEl.textContent.trim()) {
+              return { found: false };
+            }
+            return null;
           },
         });
-        if (result.success) {
-          chrome.runtime.sendMessage({ type: 'MANUAL_SUBMITTED' });
+        if (result !== null) {
+          polling = false;
+          clearInterval(pollInterval);
+          if (result.found) {
+            chrome.runtime.sendMessage({ type: 'MANUAL_SUBMITTED' });
+          }
+        } else if (Date.now() >= pollDeadline) {
+          polling = false;
+          clearInterval(pollInterval);
         }
-      } catch (e) { /* popup may be closed — ignore */ }
-    }, 3000);
+      } catch (e) {
+        polling = false;
+        clearInterval(pollInterval);
+        /* popup may be closed — ignore */
+      }
+    }, 500);
   }
 
   chrome.tabs.onUpdated.addListener(listener);

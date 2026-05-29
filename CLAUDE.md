@@ -48,7 +48,7 @@ the cache version key in app/service_worker.js MUST
 be updated to match the current version number.
 
 Format: 'acgme-cache-v{VERSION}'
-Example: 'acgme-cache-v1.4.0'
+Example: 'acgme-cache-v1.4.3'
 
 This ensures existing PWA users automatically receive
 the latest version of the app without reinstalling.
@@ -153,6 +153,9 @@ acgme-tool/
   - Review mode (default): fills one case at a time, shows preview card, resident clicks "Submit & Next" or "Skip"
   - Auto mode: submits all cases sequentially without pausing
   - Submitted IDs tracked in `chrome.storage.local` to prevent duplicate submissions
+  - Detect Manual Submit toggle (ON/OFF, persisted in `chrome.storage.local`, default ON)
+  - Session state persistence (popup restores full state after close/reopen via `chrome.storage.session`)
+  - Resubmit override (checkbox list + Apply button for previously submitted cases)
 - **Extension install page** — `app/install.html`, live at `https://userjrk.github.io/acgme-tool/app/install.html`
 - **Design references** — approved UI reference files archived in `docs/design-references/`
 

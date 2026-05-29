@@ -44,7 +44,7 @@ Key fields:
 
 ## Constraints
 - Requires active ACGME login session (cookies) — user logs in manually first
-- CSRF tokens likely required — browser automation (Playwright) is the right tool
+- Active browser session required for CSRF/cookie handling — both the Playwright script and the Chrome extension run within an authenticated browser session; the Chrome extension is now the primary submission method
 - One case submitted at a time; user reviews before each submit
 - After submission, script should pause and wait for user confirmation before next case
 
@@ -61,3 +61,8 @@ Two ways to submit cases:
 - cases_YYYY-MM-DD.json — exported case data from the web app
 - automation/submit.js — Node.js + Playwright batch submission script
 - extension/ — Chrome extension (MV3) for in-browser submission
+  - extension/popup.html, popup.js — extension popup UI and submission logic
+  - extension/background.js — tab monitoring and messaging
+  - extension/content.js — ACGME form filling
+  - extension/styles.css — popup styles
+  - extension/manifest.json — extension manifest (MV3)

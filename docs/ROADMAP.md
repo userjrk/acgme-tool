@@ -23,6 +23,9 @@ Ideas, planned features, and known issues. Updated as the project grows.
 - [x] Resident name field (sticky, program-wide)
 - [x] Edit saved cases (✏️ button, full form repopulation, Update Case)
 - [x] Chrome extension — review mode + auto mode
+- [x] Chrome extension — detect manual submit toggle
+- [x] Chrome extension — session state persistence
+- [x] Chrome extension — resubmit override (checkbox + Apply button)
 - [x] Extension install page (app/install.html)
 - [x] Design references archived in docs/design-references/
 - [ ] End-to-end test with real ACGME session
@@ -41,7 +44,7 @@ Ideas, planned features, and known issues. Updated as the project grows.
 
 ## Later — Bigger Ideas
 
-- [ ] **Mobile PWA**: package the HTML app as an installable app on iPhone/Android home screen so it feels native
+- [x] **Mobile PWA**: installable on iPhone (Safari → Add to Home Screen) and Android (Chrome → Add to Home Screen)
 - [ ] **Multi-device sync**: move from localStorage to a lightweight cloud sync (could use a private GitHub Gist or Cloudflare KV) so cases entered on phone are available on laptop
 - [ ] **Auto-export on save**: optionally write each new case immediately to a file in a watched OneDrive/iCloud folder — eliminates the manual backup step
 - [ ] **Batch submission scheduling**: run the Playwright script on a schedule (e.g., Sunday night) so submission is truly automatic
