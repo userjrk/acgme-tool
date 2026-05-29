@@ -62,6 +62,10 @@ app/case_log.html — treat it the same as updating
 the version number in extension/manifest.json.
 
 ---
+##Tools and Access 
+  - gh CLI: installed and authenticated as userjrk,
+    use for all GitHub releases and asset uploads
+---
 
 ## Who This Is For
 
