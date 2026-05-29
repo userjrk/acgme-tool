@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ACGME Case Submitter",
   "description": "Submit saved case log entries to ACGME ADS automatically",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "permissions": ["activeTab", "storage", "scripting", "tabs"],
   "host_permissions": ["https://apps.acgme.org/*"],
   "background": {

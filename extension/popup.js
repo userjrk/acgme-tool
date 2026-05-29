@@ -33,6 +33,7 @@ let sessionStatus = 'idle';
 let currentFileName = '';
 let currentResidentName = '';
 let detectManual = true; // default ON, loaded from storage in init
+let previouslySumbittedCases = [];
 
 // ── DOM REFS ──
 const statusPill     = document.getElementById('status-pill');
@@ -284,6 +285,7 @@ async function handleFile(file) {
   allCases = parsed;
   const stored = await chrome.storage.local.get(['submitted_case_ids']);
   submittedIds = new Set(stored.submitted_case_ids || []);
+  previouslySumbittedCases = allCases.filter(c => submittedIds.has(c.id));
   newCases = allCases.filter(c => !submittedIds.has(c.id));
   currentFileName = file.name;
   currentResidentName = allCases[0]?.resident_name || '';
@@ -304,7 +306,14 @@ async function handleFile(file) {
   document.getElementById('sum-dates').textContent = dates;
   caseSummary.classList.add('show');
 
-  if (skipped > 0) warning.classList.add('show');
+  if (previouslySumbittedCases.length > 0) {
+    warning.innerHTML = previouslySumbittedCases.map(c =>
+      `<label class="resubmit-row"><input type="checkbox" class="resubmit-check" data-id="${c.id}"> ` +
+      `${c.case_date} · ${c.supervisor_name || '—'} ` +
+      `<span class="resubmit-hint">(already submitted — check to resubmit)</span></label>`
+    ).join('');
+    warning.classList.add('show');
+  }
 
   submitBtn.disabled = newCases.length === 0;
   submitBtn.textContent = newCases.length > 0
@@ -335,6 +344,19 @@ submitBtn.addEventListener('click', async () => {
   currentIdx = 0;
   sessionStatus = 'running';
   startOverBtn.classList.add('show');
+
+  // Merge any resubmit-checked cases into the queue
+  const checkedResubmitIds = new Set(
+    [...document.querySelectorAll('.resubmit-check:checked')].map(el => Number(el.dataset.id))
+  );
+  if (checkedResubmitIds.size > 0) {
+    const resubmitCases = previouslySumbittedCases.filter(c => checkedResubmitIds.has(c.id));
+    newCases = [...resubmitCases, ...newCases];
+    const { submitted_case_ids: storedIds = [] } = await chrome.storage.local.get(['submitted_case_ids']);
+    const updatedIds = storedIds.filter(id => !checkedResubmitIds.has(id));
+    await chrome.storage.local.set({ submitted_case_ids: updatedIds });
+    submittedIds = new Set(updatedIds);
+  }
 
   allCases.filter(c => submittedIds.has(c.id)).forEach(c => addResult('skip', c, 'Already submitted'));
 
@@ -616,7 +638,7 @@ exportBtn.addEventListener('click', () => {
 // ── RESET ──
 async function resetAll() {
   msgBackground({ type: 'CANCEL_WATCH' }).catch(() => {});
-  allCases = []; newCases = []; sessionResults = []; currentIdx = 0;
+  allCases = []; newCases = []; previouslySumbittedCases = []; sessionResults = []; currentIdx = 0;
   sessionStatus = 'idle'; currentFileName = ''; currentResidentName = '';
   fileZone.classList.remove('loaded');
   fileIcon.textContent = '📂';
@@ -624,6 +646,7 @@ async function resetAll() {
   fileSub.textContent = 'Exported from your ACGME Case Log app';
   caseSummary.classList.remove('show');
   warning.classList.remove('show');
+  warning.innerHTML = '⚠ Some cases were already submitted and will be skipped.';
   progressWrap.classList.remove('show');
   resultsEl.classList.remove('show');
   resultsEl.innerHTML = '';

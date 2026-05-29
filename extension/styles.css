@@ -448,3 +448,13 @@ body {
   line-height: 1.5;
 }
 .warning.show { display: block; }
+.resubmit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.resubmit-row + .resubmit-row { margin-top: 5px; }
+.resubmit-row input[type="checkbox"] { flex-shrink: 0; margin-top: 2px; accent-color: var(--amber); }
+.resubmit-hint { color: var(--muted); }

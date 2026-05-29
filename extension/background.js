@@ -141,8 +141,11 @@ function waitForSubmissionResult(tabId) {
       clearTimeout(navTimeout);
       chrome.tabs.onUpdated.removeListener(listener);
 
-      // Allow 3 seconds for DOM to fully render success/error elements
-      setTimeout(async () => {
+      // Poll every 500ms for up to 5 seconds for #server-success to render
+      const pollDeadline = Date.now() + 5000;
+      let polling = true;
+      const pollInterval = setInterval(async () => {
+        if (!polling) return;
         try {
           const [{ result }] = await chrome.scripting.executeScript({
             target: { tabId },
@@ -155,14 +158,24 @@ function waitForSubmissionResult(tabId) {
               if (errorEl && errorEl.textContent.trim()) {
                 return { success: false, reason: errorEl.textContent.trim().slice(0, 200) };
               }
-              return { success: false, reason: 'timeout' };
+              return null;
             },
           });
-          resolve(result);
+          if (result !== null) {
+            polling = false;
+            clearInterval(pollInterval);
+            resolve(result);
+          } else if (Date.now() >= pollDeadline) {
+            polling = false;
+            clearInterval(pollInterval);
+            resolve({ success: false, reason: 'timeout' });
+          }
         } catch (e) {
+          polling = false;
+          clearInterval(pollInterval);
           resolve({ success: false, reason: e.message });
         }
-      }, 3000);
+      }, 500);
     }
 
     chrome.tabs.onUpdated.addListener(listener);
