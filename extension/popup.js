@@ -63,8 +63,9 @@ const previewActions = document.getElementById('preview-actions');
 const refillBtn      = document.getElementById('refill-btn');
 const submitNextBtn  = document.getElementById('submit-next-btn');
 const skipBtn        = document.getElementById('skip-btn');
-const startOverBtn      = document.getElementById('start-over-btn');
+const startOverBtn       = document.getElementById('start-over-btn');
 const detectManualToggle = document.getElementById('detect-manual-toggle');
+const resubmitApplyBtn   = document.getElementById('resubmit-apply-btn');
 
 // ── SESSION PERSISTENCE ──
 async function saveSession() {
@@ -313,6 +314,9 @@ async function handleFile(file) {
       `<span class="resubmit-hint">(already submitted — check to resubmit)</span></label>`
     ).join('');
     warning.classList.add('show');
+    warning.querySelectorAll('.resubmit-check').forEach(cb => {
+      cb.addEventListener('change', updateApplyBtn);
+    });
   }
 
   submitBtn.disabled = newCases.length === 0;
@@ -332,6 +336,40 @@ function getDatesRange(cases) {
   return `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
 }
 
+// ── RESUBMIT APPLY ──
+function updateApplyBtn() {
+  resubmitApplyBtn.style.display =
+    document.querySelector('.resubmit-check:checked') ? 'block' : 'none';
+}
+
+resubmitApplyBtn.addEventListener('click', async () => {
+  const checkedIds = new Set(
+    [...document.querySelectorAll('.resubmit-check:checked')].map(el => Number(el.dataset.id))
+  );
+  if (checkedIds.size === 0) return;
+
+  const resubmitCases = previouslySumbittedCases.filter(c => checkedIds.has(c.id));
+  const { submitted_case_ids: storedIds = [] } = await chrome.storage.local.get(['submitted_case_ids']);
+  const updatedIds = storedIds.filter(id => !checkedIds.has(id));
+  await chrome.storage.local.set({ submitted_case_ids: updatedIds });
+  submittedIds = new Set(updatedIds);
+
+  newCases = [...resubmitCases, ...newCases];
+
+  document.getElementById('sum-total').textContent = newCases.length + ' cases';
+  document.getElementById('sum-already').textContent = (allCases.length - newCases.length) + ' (will skip)';
+
+  warning.classList.remove('show');
+  resubmitApplyBtn.style.display = 'none';
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = submissionMode === 'review'
+    ? `Review ${newCases.length} Cases →`
+    : `Submit ${newCases.length} Cases →`;
+
+  await saveSession();
+});
+
 // ── SUBMIT ──
 submitBtn.addEventListener('click', async () => {
   if (submitBtn.classList.contains('done')) { resetAll(); return; }
@@ -344,19 +382,6 @@ submitBtn.addEventListener('click', async () => {
   currentIdx = 0;
   sessionStatus = 'running';
   startOverBtn.classList.add('show');
-
-  // Merge any resubmit-checked cases into the queue
-  const checkedResubmitIds = new Set(
-    [...document.querySelectorAll('.resubmit-check:checked')].map(el => Number(el.dataset.id))
-  );
-  if (checkedResubmitIds.size > 0) {
-    const resubmitCases = previouslySumbittedCases.filter(c => checkedResubmitIds.has(c.id));
-    newCases = [...resubmitCases, ...newCases];
-    const { submitted_case_ids: storedIds = [] } = await chrome.storage.local.get(['submitted_case_ids']);
-    const updatedIds = storedIds.filter(id => !checkedResubmitIds.has(id));
-    await chrome.storage.local.set({ submitted_case_ids: updatedIds });
-    submittedIds = new Set(updatedIds);
-  }
 
   allCases.filter(c => submittedIds.has(c.id)).forEach(c => addResult('skip', c, 'Already submitted'));
 
@@ -647,6 +672,7 @@ async function resetAll() {
   caseSummary.classList.remove('show');
   warning.classList.remove('show');
   warning.innerHTML = '⚠ Some cases were already submitted and will be skipped.';
+  resubmitApplyBtn.style.display = 'none';
   progressWrap.classList.remove('show');
   resultsEl.classList.remove('show');
   resultsEl.innerHTML = '';
